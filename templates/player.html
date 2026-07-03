@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block app_content %}
-<div class="player-page player-page-container" style="display: flex !important; align-items: stretch !important; justify-content: center !important; height: 100% !important; padding: 15px 20px !important; box-sizing: border-box !important; overflow: hidden !important;">
+<div class="player-page player-page-container" style="display: flex !important; align-items: stretch !important; justify-content: center !important; height: 100% !important; padding: 15px 20px !important; box-sizing: border-box !important;">
     <div class="player-main" style="flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; overflow-y: auto !important; min-height: 0 !important;">
         <div class="player-main-inner">
         {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}

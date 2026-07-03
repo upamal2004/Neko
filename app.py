@@ -1,6 +1,8 @@
 import os
 import sqlite3
-import traceback
+import random
+import itertools
+from collections import OrderedDict
 from datetime import datetime, date, timedelta
 import pytz
 from flask import Flask, render_template, request, redirect, session, jsonify, url_for
@@ -124,7 +126,6 @@ def home():
     personalized = False
     
     if total_net > 0:
-        import random
         target = random.randint(20, 25)
         for genre, net in sorted(net_scores.items(), key=lambda x: -x[1]):
             if net <= 0:
@@ -190,8 +191,6 @@ def home():
             tuple(existing) + (needed,) if existing else (needed,)
         ).fetchall()
         recommended_artists.extend(fallback)
-        # Shuffle to mix history picks with fallback
-        import random
         random.shuffle(recommended_artists)
 
     # Mood Vibe Match — energy-based recommendations
@@ -203,8 +202,6 @@ def home():
     if avg_energy is not None:
         lo = max(0.0, avg_energy - 0.10)
         hi = min(1.0, avg_energy + 0.10)
-        import random
-        # Get up to 30 candidates within range, then pick 10 at random
         candidates = conn.execute('''
             SELECT * FROM songs WHERE energy BETWEEN ? AND ? AND NOT EXISTS (
                 SELECT 1 FROM user_likes WHERE user_id = ? AND liked = 0 AND song_id = songs.id
@@ -354,7 +351,6 @@ def delete_history(history_id):
     conn.close()
     return jsonify({'success': True})
 
-# 3. Endpoint to save history in the background when play button is pressed
 @app.route('/add_to_history', methods=['POST'])
 def add_to_history():
     if 'user_id' not in session:
@@ -373,12 +369,7 @@ def add_to_history():
         conn.commit()
         conn.close()
         
-        print(f"--> SUCCESS: Song {song_id} logged into history at {naive_local_time}")
-        
     except Exception as db_error:
-        print("--> DATABASE INSERTION FAILED! ERROR DETAILS BELOW:")
-        print(str(db_error))
-        traceback.print_exc()
         return jsonify({"status": "error", "message": str(db_error)}), 500
     
     return jsonify({"status": "success", "message": "History saved"})
@@ -461,7 +452,6 @@ def profile_analysis():
     conn = get_db_connection()
     user_id = session['user_id']
     
-    # 1. Get play count for each genre (for Pie Chart)
     genre_stats = conn.execute('''
         SELECT songs.genre, COUNT(history.id) as play_count 
         FROM history 
@@ -470,11 +460,9 @@ def profile_analysis():
         GROUP BY songs.genre
     ''', (user_id,)).fetchall()
     
-    # Split data into two lists for JavaScript
     chart_labels = [row['genre'] for row in genre_stats]
     chart_data = [row['play_count'] for row in genre_stats]
     
-    # 2. User's most listened genre (for Top Card)
     top_genre = conn.execute('''
         SELECT songs.genre, COUNT(history.id) as play_count 
         FROM history 
@@ -484,7 +472,6 @@ def profile_analysis():
         ORDER BY play_count DESC LIMIT 1
     ''', (user_id,)).fetchone()
     
-    # 3. User's dominant mood type
     top_mood = conn.execute('''
         SELECT 
             CASE WHEN songs.energy > 0.6 THEN 'Happy / High Energy' ELSE 'Relax / Low Energy' END as mood_type,
@@ -496,10 +483,8 @@ def profile_analysis():
         ORDER BY mood_count DESC LIMIT 1
     ''', (user_id,)).fetchone()
     
-    # 4. Total songs played count
     total_played = conn.execute('SELECT COUNT(*) FROM history WHERE user_id = ?', (user_id,)).fetchone()[0]
     
-    # 5. Average listening energy
     avg_row = conn.execute('''
         SELECT AVG(s.energy) as avg_energy
         FROM history h
@@ -508,7 +493,6 @@ def profile_analysis():
     ''', (user_id,)).fetchone()
     avg_energy = round(avg_row['avg_energy'], 2) if avg_row and avg_row['avg_energy'] else 0
     
-    # 6. Weekly listening trend (last 7 days)
     lk_tz = pytz.timezone('Asia/Colombo')
     six_days_ago = (datetime.now(lk_tz) - timedelta(days=6)).strftime('%Y-%m-%d')
     trend_rows = conn.execute('''
@@ -530,7 +514,6 @@ def profile_analysis():
         trend_labels.append(day_names[d.weekday()])
         trend_data.append(counts_by_day.get(date_str, 0))
     
-    # 7. Genre vs Mood correlation (stacked bar)
     corr_rows = conn.execute('''
         SELECT 
             s.genre,
@@ -546,7 +529,6 @@ def profile_analysis():
     corr_happy = [row['happy_count'] for row in corr_rows]
     corr_chill = [row['chill_count'] for row in corr_rows]
     
-    # 8. Recently played songs
     recent_rows = conn.execute('''
         SELECT s.title, s.artist, h.played_at
         FROM history h
@@ -555,7 +537,6 @@ def profile_analysis():
         ORDER BY h.played_at DESC LIMIT 6
     ''', (user_id,)).fetchall()
     
-    # 9. Daily Mood & Genre Evolution (average energy + top genre per day)
     daily_energy_rows = conn.execute('''
         SELECT DATE(h.played_at) as day, ROUND(AVG(s.energy), 2) as avg_energy
         FROM history h
@@ -576,14 +557,12 @@ def profile_analysis():
     
     daily_dates = [row['day'] for row in daily_energy_rows]
     daily_energies = [row['avg_energy'] for row in daily_energy_rows]
-    from collections import OrderedDict
     top_genre_by_day = OrderedDict()
     for row in daily_genre_rows:
         if row['day'] not in top_genre_by_day:
             top_genre_by_day[row['day']] = row['genre']
     daily_genres = [top_genre_by_day.get(d, '—') for d in daily_dates]
     
-    # Playlist genre distribution (across all user's playlists)
     playlist_genre_rows = conn.execute('''
         SELECT s.genre, COUNT(*) as cnt
         FROM playlist_songs ps
@@ -596,7 +575,6 @@ def profile_analysis():
     pl_genres = [row['genre'] for row in playlist_genre_rows]
     pl_counts = [row['cnt'] for row in playlist_genre_rows]
     
-    # 10. Combined like/dislike per genre (single unified dataset)
     ld_rows = conn.execute('''
         SELECT s.genre,
                SUM(CASE WHEN ul.liked = 1 THEN 1 ELSE 0 END) as likes,
@@ -611,7 +589,6 @@ def profile_analysis():
     ld_likes = [row['likes'] for row in ld_rows]
     ld_dislikes = [row['dislikes'] for row in ld_rows]
     
-    # 11. Top liked songs
     like_song_rows = conn.execute('''
         SELECT s.title, s.artist
         FROM user_likes ul
@@ -621,7 +598,6 @@ def profile_analysis():
     ''', (user_id,)).fetchall()
     like_songs = [dict(row) for row in like_song_rows]
     
-    # 12. Top disliked songs
     dislike_song_rows = conn.execute('''
         SELECT s.title, s.artist
         FROM user_likes ul
@@ -631,7 +607,6 @@ def profile_analysis():
     ''', (user_id,)).fetchall()
     dislike_songs = [dict(row) for row in dislike_song_rows]
 
-    # 13. Top 3 most played artists
     top_artists = conn.execute('''
         SELECT s.artist, COUNT(*) as cnt
         FROM history h JOIN songs s ON h.song_id = s.id
@@ -639,7 +614,6 @@ def profile_analysis():
         GROUP BY s.artist ORDER BY cnt DESC LIMIT 3
     ''', (user_id,)).fetchall()
 
-    # 14. Top 3 most played songs
     top_songs = conn.execute('''
         SELECT s.id, s.title, s.artist, s.genre, s.energy, COUNT(*) as cnt
         FROM history h JOIN songs s ON h.song_id = s.id
@@ -707,7 +681,6 @@ def profile_analytics_json():
     daily_genre_rows = conn.execute("SELECT DATE(h.played_at) as day, s.genre, COUNT(*) as cnt FROM history h JOIN songs s ON h.song_id = s.id WHERE h.user_id = ? GROUP BY day, s.genre ORDER BY day, cnt DESC", (user_id,)).fetchall()
     daily_dates = [row['day'] for row in daily_energy_rows]
     daily_energies = [row['avg_energy'] for row in daily_energy_rows]
-    from collections import OrderedDict
     top_genre_by_day = OrderedDict()
     for row in daily_genre_rows:
         if row['day'] not in top_genre_by_day:
@@ -734,9 +707,6 @@ def profile_analytics_json():
         'playlistGenre': {'genres': pl_genres, 'counts': pl_counts},
     })
 
-# ===== MULTI-PLAYLIST ROUTES =====
-
-# Legacy compat: add song to default (first) playlist
 @app.route('/add_to_playlist/<int:song_id>', methods=['POST'])
 def legacy_add_to_playlist(song_id):
     if 'user_id' not in session:
@@ -842,7 +812,6 @@ def view_playlists():
     conn.close()
     return render_template('playlist.html', playlists=playlists, active_playlist=None, songs=[])
 
-# API to list user's playlists (for playlist picker)
 @app.route('/get_playlists')
 def get_playlists_api():
     if 'user_id' not in session:
@@ -857,7 +826,6 @@ def get_playlists_api():
     conn.close()
     return jsonify({'playlists': [dict(r) for r in playlists]})
 
-# View a specific playlist
 @app.route('/playlist/<int:playlist_id>')
 def view_specific_playlist(playlist_id):
     if 'user_id' not in session:
@@ -1064,10 +1032,8 @@ def player(song_id):
         conn.execute('INSERT INTO history (user_id, song_id, played_at) VALUES (?, ?, ?)',
                      (session['user_id'], song_id, naive_local_time))
         conn.commit()
-        print(f"--> SUCCESS: Song {song_id} forced into history at {naive_local_time} via Backend Route")
     except Exception as e:
-        print("--> Backend history tracking failed:", str(e))
-        traceback.print_exc()
+        pass
     
     conn.close()
     
@@ -1146,13 +1112,10 @@ if __name__ == '__main__':
         cursor.execute("INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)", ('admin', hashed))
         cursor.execute("INSERT OR IGNORE INTO users (username, password) VALUES (?, ?)", ('test', hashed))
         conn.commit()
-        print("Sample users (admin, 1234) created successfully!")
     except Exception as e:
         print("Failed to create sample users:", e)
     
-    # ---- Auto-seed sample listening history, likes & dislikes ----
     try:
-        # Find the admin user's actual ID
         cursor.execute('SELECT id FROM users WHERE username = ?', ('admin',))
         row = cursor.fetchone()
         if row:
@@ -1163,13 +1126,11 @@ if __name__ == '__main__':
                 from datetime import timedelta
                 lk_tz = pytz.timezone('Asia/Colombo')
                 now = datetime.now(lk_tz)
-                # 14 sample history entries across last 5 days — Pop, Rock, Indie
                 sample_songs = [
-                    (1, 2, 3, 4, 5, 6),      # Pop songs (IDs 1-6)
-                    (29, 30, 31, 32),          # Rock songs (IDs 29-32)
-                    (53, 54, 55),              # Indie songs (IDs 53-55)
+                    (1, 2, 3, 4, 5, 6),
+                    (29, 30, 31, 32),
+                    (53, 54, 55),
                 ]
-                import itertools
                 flat_songs = list(itertools.chain(*sample_songs))
                 history_rows = []
                 for i in range(14):
@@ -1181,33 +1142,24 @@ if __name__ == '__main__':
                     'INSERT INTO history (user_id, song_id, played_at) VALUES (?, ?, ?)',
                     history_rows
                 )
-                print(f"--> Seeded {len(history_rows)} history entries for user {uid}")
                 
-                # 4 likes
-                like_songs = [1, 5, 29, 54]
-                for sid in like_songs:
+                for sid in [1, 5, 29, 54]:
                     cursor.execute(
                         'INSERT OR IGNORE INTO user_likes (user_id, song_id, liked) VALUES (?, ?, 1)',
                         (uid, sid)
                     )
-                print(f"--> Seeded {len(like_songs)} likes for user {uid}")
                 
-                # 3 dislikes
-                dislike_songs = [3, 31, 55]
-                for sid in dislike_songs:
+                for sid in [3, 31, 55]:
                     cursor.execute(
                         'INSERT OR IGNORE INTO user_likes (user_id, song_id, liked) VALUES (?, ?, 0)',
                         (uid, sid)
                     )
-                print(f"--> Seeded {len(dislike_songs)} dislikes for user {uid}")
                 
                 conn.commit()
-                print("--> Auto-seeding complete!")
             else:
                 print(f"--> History already has {hist_count} entries — skipping seed")
     except Exception as e:
         print("--> Auto-seed error:", str(e))
-        traceback.print_exc()
     finally:
         conn.close()
 

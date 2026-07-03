@@ -9,8 +9,9 @@
 {% endblock %}
 
 {% block app_content %}
-<div class="player-page player-page-container" style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; height: calc(100vh - 90px) !important; padding: 15px 20px !important; box-sizing: border-box !important; overflow: hidden !important;">
-    <div class="player-main" style="flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; height: 100% !important; overflow: hidden !important;">
+<div class="player-page player-page-container" style="display: flex !important; align-items: stretch !important; justify-content: center !important; height: 100% !important; padding: 15px 20px !important; box-sizing: border-box !important; overflow: hidden !important;">
+    <div class="player-main" style="flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; overflow-y: auto !important; min-height: 0 !important;">
+        <div class="player-main-inner">
         {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
         <div class="player-artwork-container">
             {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
@@ -59,9 +60,10 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
-    <div class="player-recommendations" style="flex: 1 !important; display: flex !important; flex-direction: column !important; height: 100% !important; padding-left: 20px !important; box-sizing: border-box !important;">
+    <div class="player-recommendations" style="flex: 1 !important; display: flex !important; flex-direction: column !important; padding-left: 20px !important; box-sizing: border-box !important; min-height: 0 !important;">
         <h3>Up Next: {{ playlist_name }}</h3>
         <div class="queue-scroll-box">
         <div class="rec-list">
@@ -82,6 +84,7 @@
             {% endfor %}
         </div>
         </div>
+    </div>
 </div>
 
 <script id="song-data" type="application/json">

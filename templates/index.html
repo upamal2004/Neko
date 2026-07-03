@@ -65,7 +65,7 @@
             </div>
         </div>
         <div class="song-info">
-            <a href="/player/{{ song['id'] }}" class="song-title" style="text-decoration:none; color:inherit;">{{ song['title'] }}</a>
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
             <span class="song-artist">{{ song['artist'] }}</span>
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
@@ -101,7 +101,7 @@
             </div>
         </div>
         <div class="song-info">
-            <a href="/player/{{ song['id'] }}" class="song-title" style="text-decoration:none; color:inherit;">{{ song['title'] }}</a>
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
             <span class="song-artist">{{ song['artist'] }}</span>
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
@@ -141,7 +141,7 @@
             </div>
         </div>
         <div class="song-info">
-            <a href="/player/{{ song['id'] }}" class="song-title" style="text-decoration:none; color:inherit;">{{ song['title'] }}</a>
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
             <span class="song-artist">{{ song['artist'] }}</span>
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
@@ -180,7 +180,7 @@
             </div>
         </div>
         <div class="song-info">
-            <a href="/player/{{ song['id'] }}" class="song-title" style="text-decoration:none; color:inherit;">{{ song['title'] }}</a>
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
             <span class="song-artist">{{ song['artist'] }}</span>
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
@@ -240,7 +240,7 @@
             </div>
         </div>
         <div class="song-info">
-            <a href="/player/{{ song['id'] }}" class="song-title" style="text-decoration:none; color:inherit;">{{ song['title'] }}</a>
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
             <span class="song-artist">{{ song['artist'] }}</span>
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
@@ -262,7 +262,6 @@
 {% endif %}
 
 <script>
-// Hijack Recommend form — fetch filtered songs via AJAX, no page reload
 (function() {
     var form = document.querySelector('.mood-filter-options form');
     if (!form) return;
@@ -283,7 +282,6 @@
                 mainContent.innerHTML = newContent.innerHTML;
                 if (newTitle) document.title = newTitle.textContent;
                 history.pushState({ url: form.action + '?' + params.toString() }, '', form.action + '?' + params.toString());
-                // Re-run any inline scripts in the new content
                 mainContent.querySelectorAll('script').forEach(function(oldScript) {
                     if (oldScript.type && oldScript.type !== 'text/javascript' && oldScript.type !== '') return;
                     var newScript = document.createElement('script');

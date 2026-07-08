@@ -15,9 +15,49 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())
 
 import urllib.parse
+import requests
 @app.template_filter('urlencode')
 def urlencode_filter(s):
     return urllib.parse.quote(s, safe='')
+
+def fetch_and_save_artist_image(artist_name):
+    import time
+    os.makedirs('static/images/artists', exist_ok=True)
+    safe_name = artist_name.lower().replace(' ', '_').replace('/', '_')
+    local_path = f'static/images/artists/{safe_name}.jpg'
+    if os.path.exists(local_path):
+        return f'images/artists/{safe_name}.jpg'
+    try:
+        url = (
+            'http://ws.audioscrobbler.com/2.0/'
+            '?method=artist.getinfo'
+            f'&artist={urllib.parse.quote(artist_name)}'
+            '&api_key=b25b959554ed76058ac220b7b2e0a026'
+            '&format=json'
+        )
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        images = data.get('artist', {}).get('image', [])
+        img_url = ''
+        for img in images:
+            if img.get('size') in ('extralarge', 'mega'):
+                img_url = img.get('#text', '')
+                break
+        if not img_url:
+            for img in images:
+                if img.get('size') == 'large':
+                    img_url = img.get('#text', '')
+                    break
+        if img_url:
+            img_resp = requests.get(img_url, timeout=15)
+            img_resp.raise_for_status()
+            with open(local_path, 'wb') as f:
+                f.write(img_resp.content)
+            return f'images/artists/{safe_name}.jpg'
+    except Exception as e:
+        print(f"  [artist-img] Failed for '{artist_name}': {e}")
+    return None
 
 # Database connection function
 def get_db_connection():
@@ -205,7 +245,7 @@ def home():
         candidates = conn.execute('''
             SELECT * FROM songs WHERE energy BETWEEN ? AND ? AND NOT EXISTS (
                 SELECT 1 FROM user_likes WHERE user_id = ? AND liked = 0 AND song_id = songs.id
-            )
+            ) ORDER BY RANDOM() LIMIT 10
         ''', (lo, hi, user_id)).fetchall()
         random.shuffle(candidates)
         energy_recommended_songs = candidates[:10]
@@ -227,6 +267,8 @@ def home():
 def recommend():
     genre = request.args.get('genre', 'all')
     mood = request.args.get('mood', 'all')
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
     
     conn = get_db_connection()
     user_id = session.get('user_id')
@@ -252,21 +294,64 @@ def recommend():
         order = "ORDER BY energy ASC"
     
     where = " AND ".join(conditions) if conditions else "1=1"
-    query = f"SELECT * FROM songs WHERE {where} {exclude_disliked} {order}"
+    where_clause = f"WHERE {where}"
     
+    # Count total matching songs
     if genre != 'all' or mood != 'all':
         if user_id:
-            songs = conn.execute(query, params + [user_id]).fetchall()
+            total = conn.execute(
+                f"SELECT COUNT(*) FROM songs {where_clause} {exclude_disliked}",
+                params + [user_id]
+            ).fetchone()[0]
         else:
-            songs = conn.execute(query.replace(exclude_disliked, ''), params).fetchall()
+            total = conn.execute(
+                f"SELECT COUNT(*) FROM songs {where_clause}",
+                params
+            ).fetchone()[0]
+    else:
+        total = conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
+    
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    offset = (page - 1) * per_page
+    
+    # Fetch current page
+    if genre != 'all' or mood != 'all':
+        if user_id:
+            songs = conn.execute(
+                f"SELECT * FROM songs {where_clause} {exclude_disliked} {order} LIMIT ? OFFSET ?",
+                params + [user_id, per_page, offset]
+            ).fetchall()
+        else:
+            songs = conn.execute(
+                f"SELECT * FROM songs {where_clause} {order} LIMIT ? OFFSET ?",
+                params + [per_page, offset]
+            ).fetchall()
     else:
         songs = conn.execute(
-            "SELECT * FROM songs ORDER BY RANDOM()"
+            "SELECT * FROM songs ORDER BY RANDOM() LIMIT ? OFFSET ?",
+            (per_page, offset)
         ).fetchall()
-        
+    
+    # Get default playlist song IDs for +/✓ state
+    default_playlist = conn.execute(
+        'SELECT id FROM playlists_new WHERE user_id = ? ORDER BY created_at LIMIT 1',
+        (user_id,)
+    ).fetchone()
+    playlist_song_ids = set()
+    if default_playlist:
+        playlist_song_ids = {r['song_id'] for r in conn.execute(
+            'SELECT song_id FROM playlist_songs WHERE playlist_id = ?',
+            (default_playlist['id'],)
+        ).fetchall()}
+    
     conn.close()
     
-    return render_template('index.html', songs=songs, is_filtered=True)
+    songs = [{**dict(s), 'is_in_playlist': s['id'] in playlist_song_ids} for s in songs]
+    
+    return render_template('index.html', songs=songs, is_filtered=True,
+                           page=page, per_page=per_page, total=total, total_pages=total_pages,
+                           current_genre=genre, current_mood=mood)
 
 @app.route('/search_suggestions')
 def search_suggestions():
@@ -304,14 +389,29 @@ def search_suggestions():
 
 @app.route('/search', methods=['GET'])
 def search_song():
-    query = request.args.get('query')
+    query = request.args.get('query', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
     
     conn = get_db_connection()
-    # Search for songs whose title matches the query (LIKE operator)
-    songs = conn.execute("SELECT * FROM songs WHERE title LIKE ?", ('%' + query + '%',)).fetchall()
+    
+    like_pattern = '%' + query + '%'
+    total = conn.execute(
+        "SELECT COUNT(*) FROM songs WHERE title LIKE ?", (like_pattern,)
+    ).fetchone()[0]
+    
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = max(1, min(page, total_pages))
+    offset = (page - 1) * per_page
+    
+    songs = conn.execute(
+        "SELECT * FROM songs WHERE title LIKE ? LIMIT ? OFFSET ?",
+        (like_pattern, per_page, offset)
+    ).fetchall()
     conn.close()
     
-    return render_template('index.html', songs=songs)
+    return render_template('index.html', songs=songs,
+                           page=page, per_page=per_page, total=total, total_pages=total_pages)
 
 @app.route('/history')
 def view_history():
@@ -615,7 +715,7 @@ def profile_analysis():
     ''', (user_id,)).fetchall()
 
     top_songs = conn.execute('''
-        SELECT s.id, s.title, s.artist, s.genre, s.energy, COUNT(*) as cnt
+        SELECT s.id, s.title, s.artist, s.genre, s.energy, s.image_url, COUNT(*) as cnt
         FROM history h JOIN songs s ON h.song_id = s.id
         WHERE h.user_id = ?
         GROUP BY h.song_id ORDER BY cnt DESC LIMIT 3

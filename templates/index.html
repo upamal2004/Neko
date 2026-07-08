@@ -24,16 +24,19 @@
             </div>
             <div class="mood-filter-options">
                 <form action="/recommend" method="GET" style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+                    <input type="hidden" name="page" id="page-input" value="{{ page|default(1) }}">
                     <select name="genre" class="mood-select">
-                        <option value="all">All Genres</option>
-                        <option value="Pop">Pop</option>
-                        <option value="Rock">Rock</option>
-                        <option value="Classical">Classical</option>
+                        <option value="all" {% if current_genre is not defined or current_genre == 'all' %}selected{% endif %}>All Genres</option>
+                        <option value="Pop" {% if current_genre == 'Pop' %}selected{% endif %}>Pop</option>
+                        <option value="Rock" {% if current_genre == 'Rock' %}selected{% endif %}>Rock</option>
+                        <option value="Classical" {% if current_genre == 'Classical' %}selected{% endif %}>Classical</option>
+                        <option value="Dance" {% if current_genre == 'Dance' %}selected{% endif %}>Dance</option>
+                        <option value="Jazz" {% if current_genre == 'Jazz' %}selected{% endif %}>Jazz</option>
                     </select>
                     <select name="mood" class="mood-select">
-                        <option value="all">All Moods</option>
-                        <option value="high">Happy (High Energy)</option>
-                        <option value="low">Relax (Low Energy)</option>
+                        <option value="all" {% if current_mood is not defined or current_mood == 'all' %}selected{% endif %}>All Moods</option>
+                        <option value="high" {% if current_mood == 'high' %}selected{% endif %}>Happy (High Energy)</option>
+                        <option value="low" {% if current_mood == 'low' %}selected{% endif %}>Relax (Low Energy)</option>
                     </select>
                     <button type="submit" class="btn btn-primary">Recommend</button>
                 </form>
@@ -53,8 +56,8 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+            {% if song['image_url'] %}
+                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="cover-fallback">♪</div>
             {% endif %}
@@ -89,8 +92,8 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+            {% if song['image_url'] %}
+                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="cover-fallback">♪</div>
             {% endif %}
@@ -129,8 +132,8 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+            {% if song['image_url'] %}
+                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="cover-fallback">♪</div>
             {% endif %}
@@ -168,8 +171,8 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+            {% if song['image_url'] %}
+                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="cover-fallback">♪</div>
             {% endif %}
@@ -205,7 +208,9 @@
 <div class="song-row">
     {% for artist in recommended_artists %}
     <a href="/search?query={{ artist['artist'] | urlencode }}" class="artist-card">
-        <div class="artist-avatar">{{ artist['artist'][0] | upper }}</div>
+        <div class="artist-avatar-circle" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1db954, #191414); color: #ffffff; font-size: 24px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 2px solid #282828;">
+            {{ artist['artist'][0] }}
+        </div>
         <span class="artist-name">{{ artist['artist'] }}</span>
     </a>
     {% else %}
@@ -228,8 +233,8 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+            {% if song['image_url'] %}
+                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="cover-fallback">♪</div>
             {% endif %}
@@ -259,9 +264,27 @@
     {% endfor %}
 </div>
 
+{% if total_pages is defined and total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="#" class="pagination-link" onclick="goToPage({{ page-1 }}); return false;">Previous</a>
+    {% endif %}
+    <span class="pagination-link active">{{ page }}</span>
+    {% if page < total_pages %}
+    <a href="#" class="pagination-link" onclick="goToPage({{ page+1 }}); return false;">Next</a>
+    {% endif %}
+    <span style="color:var(--text-secondary); font-size:0.85rem; padding:0 8px;">Page {{ page }} of {{ total_pages }}</span>
+</div>
+{% endif %}
+
 {% endif %}
 
 <script>
+function goToPage(p) {
+    document.getElementById('page-input').value = p;
+    document.querySelector('.mood-filter-options form').dispatchEvent(new Event('submit'));
+}
+
 (function() {
     var form = document.querySelector('.mood-filter-options form');
     if (!form) return;

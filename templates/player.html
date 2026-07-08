@@ -5,7 +5,7 @@
 {% block head_extra %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-<link rel="preload" as="image" href="{% if song['genre'] in ('Pop', 'Rock', 'Classical') %}{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}{% endif %}">
+<link rel="preload" as="image" href="{{ song['image_url'] if song['image_url'] else '' }}">
 {% endblock %}
 
 {% block app_content %}
@@ -14,8 +14,8 @@
         <div class="player-main-inner">
         {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
         <div class="player-artwork-container">
-            {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img class="player-artwork" src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="Album Art">
+            {% if song['image_url'] %}
+                <img class="player-artwork" src="{{ song['image_url'] }}" alt="Album Art" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             {% else %}
                 <div class="player-artwork player-artwork-fallback">♪</div>
             {% endif %}
@@ -70,8 +70,8 @@
             {% for rec in recommendations %}
             <a href="/player/{{ rec['id'] }}{% if playlist_id %}?playlist_id={{ playlist_id }}{% endif %}" class="rec-item">
                 {% set rec_mood = 'happy' if rec['energy'] >= 0.5 else 'relax' %}
-                {% if rec['genre'] in ('Pop', 'Rock', 'Classical') %}
-                    <img class="rec-img" src="{{ url_for('static', filename='images/' ~ rec['genre'] ~ ' ' ~ rec_mood ~ '.jpg') }}" alt="cover">
+                {% if rec['image_url'] %}
+                    <img class="rec-img" src="{{ rec['image_url'] }}" alt="cover" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
                 {% else %}
                     <div class="rec-img-fallback">♪</div>
                 {% endif %}
@@ -95,7 +95,7 @@
     "genre": {{ song['genre']|tojson|safe }},
     "energy": {{ song['energy'] }},
     "file_path": "{{ url_for('static', filename='songs/' + song['file_path']) if song.get('file_path') and song['file_path'].strip() else '' }}",
-    "image_url": "{% if song['genre'] in ('Pop', 'Rock', 'Classical') %}{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}{% endif %}"{% if playlist_id %},"playlist_id": {{ playlist_id }}{% endif %}
+    "image_url": "{{ song['image_url'] if song['image_url'] else '' }}"{% if playlist_id %},"playlist_id": {{ playlist_id }}{% endif %}
 }
 </script>
 <script>

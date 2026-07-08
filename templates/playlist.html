@@ -72,8 +72,8 @@
             <div class="song-card">
                 <div class="song-cover">
                     {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-                    {% if song['genre'] in ('Pop', 'Rock', 'Classical') %}
-                        <img src="{{ url_for('static', filename='images/' ~ song['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="{{ song['genre'] }}" class="cover-img">
+                    {% if song['image_url'] %}
+                        <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
                     {% else %}
                         <div class="cover-fallback">♪</div>
                     {% endif %}

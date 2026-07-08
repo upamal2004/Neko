@@ -58,8 +58,8 @@
             <div class="top-item top-item-track">
                 <div class="top-rank">{{ loop.index }}</div>
                 {% set mood = 'happy' if s['energy'] >= 0.5 else 'relax' %}
-                {% if s['genre'] in ('Pop', 'Rock', 'Classical') %}
-                <img src="{{ url_for('static', filename='images/' ~ s['genre'] ~ ' ' ~ mood ~ '.jpg') }}" alt="" class="top-track-img">
+                {% if s['image_url'] %}
+                <img src="{{ s['image_url'] }}" alt="" class="top-track-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
                 {% else %}
                 <div class="top-track-img top-track-img-fallback">♪</div>
                 {% endif %}

@@ -1,18 +1,18 @@
-# MelodyHub — Flask Music Recommendation System
+# Neko - Flask Music Recommendation System
 
 A fully responsive music web application where users can browse tracks by genre and mood, listen via a dedicated player page, manage personal playlists asynchronously (AJAX), track listening history with correct timezone support, and view interactive profile analytics of their music taste.
 
 ## Features
 
-- **User Authentication** — Secure registration/login with password hashing (werkzeug)
-- **Persistent Playlists** — Add/remove songs instantly via AJAX without page reload
-- **Dynamic Listening History** — Automatic backend logging with Asia/Colombo timezone
-- **Smart Recommendations** — Personalized picks based on top genre + time-of-day curation
-- **Interactive Profile Charts** — Genre distribution, 7-day trend, mood correlation, and daily evolution powered by Chart.js
-- **Playlist Analytics** — Doughnut chart breakdown of saved song genres on profile
-- **Seamless Audio Playback** — Dedicated full-screen player with timeline, smart next, and auto-advance
-- **Fallback Audio Streaming** — Automatic fallback to a reliable MP3 stream when local files are missing
-- **Dark Theme UI** — Premium dark design with glassmorphism, responsive grid, and consistent sidebar navigation
+- **User Authentication** - Secure registration/login with password hashing (werkzeug)
+- **Persistent Playlists** - Add/remove songs instantly via AJAX without page reload
+- **Dynamic Listening History** - Automatic backend logging with Asia/Colombo timezone
+- **Smart Recommendations** - Personalized picks based on top genre + time-of-day curation
+- **Interactive Profile Charts** - Genre distribution, 7-day trend, mood correlation, and daily evolution powered by Chart.js
+- **Playlist Analytics** - Doughnut chart breakdown of saved song genres on profile
+- **Seamless Audio Playback** - Dedicated full-screen player with timeline, smart next, and auto-advance
+- **Fallback Audio Streaming** - Automatic fallback to a reliable MP3 stream when local files are missing
+- **Dark Theme UI** - Premium dark design with glassmorphism, responsive grid, and consistent sidebar navigation
 
 ## Tech Stack
 

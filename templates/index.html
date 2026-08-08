@@ -1,6 +1,6 @@
 {% extends "base_app.html" %}
 
-{% block title %}Home — MusicApp{% endblock %}
+{% block title %}Home — Neko{% endblock %}
 
 {% block app_content %}
 <div class="hero-banner">
@@ -16,6 +16,15 @@
                 <input type="text" name="query" id="search-input" placeholder="What do you want to listen to?" autocomplete="off" required>
             </form>
             <div class="search-suggestions" id="search-suggestions"></div>
+        </div>
+        {% set active_genre = current_genre if current_genre is defined else 'all' %}
+        <div class="genre-pills" role="group" aria-label="Quick genre filter">
+            <a href="/" class="genre-pill {% if active_genre == 'all' %}active{% endif %}">All</a>
+            <a href="/recommend?genre=Pop" class="genre-pill {% if active_genre == 'Pop' %}active{% endif %}">Pop</a>
+            <a href="/recommend?genre=Rock" class="genre-pill {% if active_genre == 'Rock' %}active{% endif %}">Rock</a>
+            <a href="/recommend?genre=Dance" class="genre-pill {% if active_genre == 'Dance' %}active{% endif %}">Dance</a>
+            <a href="/recommend?genre=Classical" class="genre-pill {% if active_genre == 'Classical' %}active{% endif %}">Classical</a>
+            <a href="/recommend?genre=Jazz" class="genre-pill {% if active_genre == 'Jazz' %}active{% endif %}">Jazz</a>
         </div>
         <div class="mood-filter mood-filter-banner">
             <div class="mood-filter-header">
@@ -62,7 +71,7 @@
                 <div class="cover-fallback">♪</div>
             {% endif %}
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -73,7 +82,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -98,7 +107,7 @@
                 <div class="cover-fallback">♪</div>
             {% endif %}
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -109,7 +118,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -138,7 +147,7 @@
                 <div class="cover-fallback">♪</div>
             {% endif %}
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -149,7 +158,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -177,7 +186,7 @@
                 <div class="cover-fallback">♪</div>
             {% endif %}
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -188,7 +197,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -239,7 +248,7 @@
                 <div class="cover-fallback">♪</div>
             {% endif %}
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -250,7 +259,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}')">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}

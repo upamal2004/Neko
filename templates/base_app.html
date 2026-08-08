@@ -33,8 +33,7 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="MusicApp" class="logo-img">
-                    <span class="logo-text">MusicApp</span>
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Neko" class="logo-img">
                 </div>
             </div>
 
@@ -64,6 +63,11 @@
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     <span class="nav-label">Settings</span>
                 </a>
+                <button type="button" id="theme-toggle" class="nav-item theme-toggle" aria-label="Toggle theme">
+                    <svg class="nav-icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                    <svg class="nav-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                    <span class="nav-label">Theme</span>
+                </button>
             </nav>
 
             <div class="sidebar-footer">
@@ -129,7 +133,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
             </button>
             <input type="range" class="volume-slider" id="player-volume" min="0" max="1" step="0.01" value="0.7">
-            <button class="player-btn" id="player-expand-btn" title="Now Playing View">
+            <button type="button" class="player-btn" id="player-expand-btn" title="No song playing" disabled>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
             </button>
         </div>
@@ -139,6 +143,28 @@
 </div>
 
 {% block bottom_player %}{% endblock %}
+
+<script>
+(function() {
+    var toggle = document.getElementById('theme-toggle');
+    var root = document.documentElement;
+    if (!toggle) return;
+
+    function updateIcons() {
+        var isLight = root.getAttribute('data-theme') === 'light';
+        toggle.classList.toggle('light-theme', isLight);
+    }
+
+    toggle.addEventListener('click', function() {
+        var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        root.setAttribute('data-theme', next);
+        try { localStorage.setItem('neko_theme', next); } catch (e) {}
+        updateIcons();
+    });
+
+    updateIcons();
+})();
+</script>
 
 <script>
 (function() {
@@ -167,7 +193,17 @@
     var playerBar = document.getElementById('persistent-player');
     var expandBtn = document.getElementById('player-expand-btn');
 
+    var ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    var ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    var ICON_EXPAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    var ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 3 3 3 3 9"/><polyline points="15 21 21 21 21 15"/><line x1="3" y1="9" x2="10" y2="16"/><line x1="21" y1="15" x2="14" y2="8"/></svg>';
+
     var currentSong = null;
+
+    function resolveImage(song) {
+        if (!song) return '';
+        return (song.image_url || song.cover_image || song.artwork_url) || '';
+    }
 
     // ===== SPA NAVIGATION =====
     window.navigateTo = function(url, doPushState) {
@@ -176,6 +212,14 @@
         if (url.startsWith('/logout') || url.startsWith('/login') || url.startsWith('/register')) {
             window.location.href = url;
             return;
+        }
+
+        // Smart back navigation: remember the page we came from when opening the
+        // player page so the bottom-right expand/collapse button can return to it.
+        if (doPushState !== false && /^\/player\/\d+/.test(url) && !/^\/player\//.test(window.location.pathname)) {
+            try {
+                sessionStorage.setItem('previousPage', window.location.pathname + window.location.search);
+            } catch (e) {}
         }
 
         var mainContent = document.querySelector('.main-content');
@@ -194,29 +238,12 @@
                     if (newTitle) document.title = newTitle.textContent;
                     if (doPushState) history.pushState({ url: url }, '', url);
                     updateActiveNav(url);
+                    updateExpandBtnState();
                     reExecuteScripts(mainContent);
                     if (typeof window._onContentSwapped === 'function') {
                         window._onContentSwapped();
                     }
-                    // Force layout reset for player page after dynamic load
                     window.scrollTo({ top: 0, behavior: 'instant' });
-                    var pc = document.querySelector('.player-page-container');
-                    var ls = document.querySelector('.player-main');
-                    if (pc) {
-                        pc.scrollTop = 0;
-                        pc.style.display = 'flex';
-                        pc.style.alignItems = 'stretch';
-                        pc.style.justifyContent = 'center';
-                        pc.style.setProperty('display', 'flex', 'important');
-                        pc.style.setProperty('align-items', 'stretch', 'important');
-                        pc.style.setProperty('justify-content', 'center', 'important');
-                        pc.style.setProperty('height', '100%', 'important');
-                        pc.style.setProperty('overflow-y', 'hidden', 'important');
-                    }
-                    if (ls) {
-                        ls.style.setProperty('align-self', 'center', 'important');
-                        ls.style.setProperty('margin-top', '0', 'important');
-                    }
                 }
                 mainContent.classList.remove('page-transitioning');
             })
@@ -266,6 +293,12 @@
     // ===== SONG LOADING =====
     function loadSong(song) {
         if (!song) return;
+
+        var playRequested = song.play_requested === true;
+        var resumeTime = song.resume_time != null ? Number(song.resume_time) : null;
+        try { delete song.play_requested; } catch (e) {}
+        try { delete song.resume_time; } catch (e) {}
+
         currentSong = song;
 
         songTitle.textContent = song.title || 'Unknown';
@@ -277,8 +310,9 @@
         }
 
         thumb.style.display = 'block';
-        if (song.image_url) {
-            thumb.src = song.image_url;
+        var resolvedThumb = resolveImage(song);
+        if (resolvedThumb) {
+            thumb.src = resolvedThumb;
         } else {
             thumb.src = '{{ url_for('static', filename='images/default_cover.png') }}';
         }
@@ -290,6 +324,30 @@
 
         playerBar.classList.remove('idle');
         updatePlayBtn();
+        updateExpandBtnState();
+        persistPlayerState();
+
+        fetchLikeStatus(song.id);
+
+        // Auto-play when arriving via a Play button, or resume a persisted track
+        if (playRequested || /[?&]autoplay=true/.test(window.location.search)) {
+            var doAutoPlay = function() {
+                if (resumeTime > 0 && isFinite(resumeTime)) {
+                    try { audio.currentTime = resumeTime; } catch (e) {}
+                }
+                var p = audio.play();
+                if (p && p.catch) p.catch(function() {});
+            };
+            if (audio.readyState >= 3 || !audio.paused) {
+                doAutoPlay();
+            } else {
+                audio.addEventListener('canplay', doAutoPlay, { once: true });
+            }
+        } else if (resumeTime > 0 && isFinite(resumeTime)) {
+            audio.addEventListener('loadedmetadata', function() {
+                try { audio.currentTime = resumeTime; } catch (e) {}
+            }, { once: true });
+        }
     }
 
     // Register with early listener
@@ -298,9 +356,9 @@
     // ===== PLAYBACK CONTROLS =====
     function updatePlayBtn() {
         if (audio.paused) {
-            playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+            playBtn.innerHTML = ICON_PLAY;
         } else {
-            playBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+            playBtn.innerHTML = ICON_PAUSE;
         }
     }
 
@@ -316,11 +374,21 @@
     playBtn.addEventListener('click', handlePlayClick);
     playBtn.addEventListener('touchstart', handlePlayClick, { passive: false });
 
+    nextBtn.addEventListener('click', function() {
+        goToNextTrack();
+    });
+
+    prevBtn.addEventListener('click', function() {
+        if (audio.currentTime > 3) {
+            audio.currentTime = 0;
+        }
+    });
+
     audio.addEventListener('play', function() {
         updatePlayBtn();
         playerBar.classList.add('is-playing');
         document.body.classList.add('is-playing');
-        localStorage.setItem('audio_playing', 'true');
+        persistPlayerState();
         // Record history on every play
         if (currentSong && currentSong.id) {
             fetch('/add_to_history', {
@@ -335,11 +403,12 @@
         updatePlayBtn();
         playerBar.classList.remove('is-playing');
         document.body.classList.remove('is-playing');
-        localStorage.setItem('audio_playing', 'false');
+        persistPlayerState();
     });
 
     audio.addEventListener('ended', function() {
-        localStorage.setItem('audio_playing', 'false');
+        persistPlayerState();
+        goToNextTrack();
     });
 
     audio.addEventListener('timeupdate', function() {
@@ -349,17 +418,12 @@
             progress.style.setProperty('--progress', pct + '%');
             curTime.textContent = formatTime(audio.currentTime);
         }
+        persistPlayerState();
     });
 
     audio.addEventListener('loadedmetadata', function() {
         totalTime.textContent = formatTime(audio.duration);
     });
-
-    // Restore playback state across full page reloads
-    var wasPlaying = localStorage.getItem('audio_playing');
-    if (wasPlaying === 'false' && audio.src && !audio.paused) {
-        audio.pause();
-    }
 
     progress.addEventListener('input', function() {
         if (audio.duration) {
@@ -371,6 +435,7 @@
         audio.volume = this.value;
         this.style.setProperty('--vol-progress', (this.value * 100) + '%');
         updateVolumeIcon();
+        persistPlayerState();
     });
 
     function updateVolumeIcon() {
@@ -383,8 +448,11 @@
         } else {
             icon = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>';
         }
-        volumeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + icon + '</svg>';
+        var html = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' + icon + '</svg>';
+        volumeBtn.innerHTML = html;
     }
+
+    audio.volume = parseFloat(volumeSlider.value);
 
     // ===== LIKE / DISLIKE (sync via custom event) =====
     var likeBtn = document.getElementById('player-like-btn');
@@ -444,52 +512,27 @@
         }
     });
 
-    // Update like status when song changes
-    var origLoadSong = loadSong;
-    loadSong = function(song) {
-        origLoadSong(song);
-        if (song && song.id) {
-            fetchLikeStatus(song.id);
-        }
-    };
-
-    nextBtn.addEventListener('click', function() {
-        goToNextTrack();
-    });
-
-    prevBtn.addEventListener('click', function() {
-        if (audio.currentTime > 3) {
-            audio.currentTime = 0;
-        }
-    });
-
-    audio.addEventListener('ended', function() {
-        goToNextTrack();
-    });
-
+    // ===== UP NEXT / QUEUE =====
     function goToNextTrack() {
         var recs = document.querySelectorAll('.rec-list .rec-item');
         if (recs.length > 0 && currentSong && currentSong.id) {
-            var currentUrl = '/player/' + currentSong.id;
             for (var i = 0; i < recs.length; i++) {
-                if (recs[i].getAttribute('href') === currentUrl) {
-                    var next = recs[i + 1];
+                var cur = recs[i].getAttribute('href').match(/^\/player\/(\d+)/);
+                if (cur && parseInt(cur[1], 10) === currentSong.id) {
+                    var next = recs[i + 1] || recs[0];
                     if (next) {
                         navigateTo(next.getAttribute('href'));
-                        return;
                     }
-                    break;
+                    return;
                 }
             }
-            // Current song not found or last in list — wrap to first
+            // Current song not found in the queue — wrap to first
             navigateTo(recs[0].getAttribute('href'));
             return;
         }
         // Fallback if no Up Next queue
         if (currentSong && currentSong.id) {
-            var plId = null;
-            var m = window.location.search.match(/[?&]playlist_id=(\d+)/);
-            if (m) plId = parseInt(m[1], 10);
+            var plId = currentSong.playlist_id || null;
             var body = { song_id: currentSong.id };
             if (plId) body.playlist_id = plId;
             fetch('/smart_next', {
@@ -509,12 +552,58 @@
         }
     }
 
-    // ===== EXPAND BUTTON =====
-    expandBtn.addEventListener('click', function() {
+    // ===== EXPAND BUTTON (opens the player page) =====
+    expandBtn.setAttribute('type', 'button');
+
+    function persistPlayerState() {
+        var state = {
+            song_id: currentSong ? currentSong.id : null,
+            current_time: audio.currentTime,
+            is_playing: !audio.paused,
+            volume: audio.volume
+        };
+        try {
+            localStorage.setItem('neko_player_state', JSON.stringify(state));
+        } catch (e) {}
+        if (currentSong && currentSong.id) {
+            try { sessionStorage.setItem('currentSong', JSON.stringify(currentSong)); } catch (e) {}
+        }
+    }
+
+    function updateExpandBtnState() {
+        var onPlayerPage = /^\/player\/\d+/.test(window.location.pathname);
+        var playing = !!(currentSong && currentSong.id);
+        if (onPlayerPage) {
+            expandBtn.title = 'Back to previous page';
+            expandBtn.disabled = false;
+            expandBtn.innerHTML = ICON_COLLAPSE;
+        } else {
+            expandBtn.title = playing ? 'Now Playing' : 'No song playing';
+            expandBtn.disabled = !playing;
+            expandBtn.innerHTML = playing ? ICON_EXPAND : '';
+        }
+    }
+
+    expandBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (/^\/player\/\d+/.test(window.location.pathname)) {
+            // On the player page: smart back to the page we came from
+            var prev = '';
+            try { prev = sessionStorage.getItem('previousPage') || ''; } catch (err) {}
+            var current = window.location.pathname + window.location.search;
+            if (prev && prev.indexOf('http') !== 0 && prev.indexOf('//') !== 0 && prev !== current) {
+                navigateTo(prev);
+            } else {
+                navigateTo('/');
+            }
+            return;
+        }
         if (currentSong && currentSong.id) {
             navigateTo('/player/' + currentSong.id);
         }
     });
+
+    updateExpandBtnState();
 
     function formatTime(secs) {
         if (isNaN(secs) || !isFinite(secs)) return '0:00';
@@ -523,28 +612,85 @@
         return m + ':' + (s < 10 ? '0' : '') + s;
     }
 
-    // ===== RESTORE PLAYER STATE FROM SESSION STORAGE =====
-    // Skip when on a player page: server already provides the correct song data,
-    // so we must not overwrite it with stale session data.
-    if (!window.location.pathname.match(/^\/player\/\d+/)) {
-        (function() {
-            var savedSong = sessionStorage.getItem('currentSong');
-            if (savedSong) {
-                try {
-                    var song = JSON.parse(savedSong);
-                    var savedTime = parseFloat(sessionStorage.getItem('currentTime') || '0');
-                    window.dispatchEvent(new CustomEvent('song:play', { detail: song }));
-                    audio.currentTime = savedTime;
-                } catch(e) {}
+    // ===== RESTORE PLAYER STATE FROM LOCAL STORAGE =====
+    // Runs on every full page load. If the audio element survived an SPA
+    // navigation it is already playing, so this only matters after a reload.
+    (function() {
+        var state = null;
+        try { state = JSON.parse(localStorage.getItem('neko_player_state') || 'null'); } catch (e) {}
+
+        // Always restore the volume
+        if (state && typeof state.volume === 'number' && isFinite(state.volume)) {
+            audio.volume = Math.min(1, Math.max(0, state.volume));
+            volumeSlider.value = audio.volume;
+            volumeSlider.style.setProperty('--vol-progress', (audio.volume * 100) + '%');
+            updateVolumeIcon();
+        }
+
+        if (!state || !state.song_id) return;
+
+        var onPlayerPage = /^\/player\/\d+/.test(window.location.pathname);
+
+        function resumeTrack(savedTime) {
+            var doResume = function() {
+                if (savedTime > 0 && isFinite(savedTime)) {
+                    try { audio.currentTime = savedTime; } catch (e) {}
+                }
+                var p = audio.play();
+                if (p && p.catch) p.catch(function() {});
+            };
+            if (audio.readyState >= 1) {
+                doResume();
+            } else {
+                audio.addEventListener('canplay', doResume, { once: true });
             }
-        })();
-    }
+        }
+
+        function seekTo(savedTime) {
+            audio.addEventListener('loadedmetadata', function() {
+                try { audio.currentTime = savedTime; } catch (e) {}
+            }, { once: true });
+        }
+
+        function startSavedSong(song) {
+            window.dispatchEvent(new CustomEvent('song:play', { detail: song }));
+            if (state.is_playing) {
+                resumeTrack(state.current_time);
+            } else if (state.current_time > 0) {
+                seekTo(state.current_time);
+            }
+        }
+
+        if (onPlayerPage) {
+            // The player page's own song is authoritative.
+            if (currentSong && currentSong.id) {
+                var matches = String(currentSong.id) === String(state.song_id);
+                if (state.is_playing) {
+                    resumeTrack(matches ? state.current_time : 0);
+                } else if (state.current_time > 0 && matches) {
+                    seekTo(state.current_time);
+                }
+            }
+            return;
+        }
+
+        // Non-player page: load the saved song, then resume.
+        var cached = null;
+        try { cached = JSON.parse(sessionStorage.getItem('currentSong') || 'null'); } catch (e) {}
+        if (cached && cached.id && String(cached.id) === String(state.song_id)) {
+            startSavedSong(cached);
+            return;
+        }
+        fetch('/api/song/' + state.song_id)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data && data.id) startSavedSong(data);
+            })
+            .catch(function() {});
+    })();
 
     window.addEventListener('beforeunload', function() {
-        if (currentSong) {
-            sessionStorage.setItem('currentSong', JSON.stringify(currentSong));
-            sessionStorage.setItem('currentTime', audio.currentTime.toString());
-        }
+        persistPlayerState();
     });
 })();
 </script>

@@ -1,92 +1,106 @@
 {% extends "base_app.html" %}
 
-{% block title %}{{ song['title'] }} — MusicApp{% endblock %}
+{% block title %}{{ song['title'] }} — Neko{% endblock %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-{% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-<link rel="preload" as="image" href="{{ song['image_url'] if song['image_url'] else '' }}">
+{% if song.get('image_url') %}
+<link rel="preload" as="image" href="{{ song['image_url'] }}">
+{% endif %}
 {% endblock %}
 
 {% block app_content %}
-<div class="player-page player-page-container" style="display: flex !important; align-items: stretch !important; justify-content: center !important; height: 100% !important; padding: 15px 20px !important; box-sizing: border-box !important;">
-    <div class="player-main" style="flex: 1 !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; overflow-y: auto !important; min-height: 0 !important;">
+<div class="player-page player-page-container">
+    <div class="player-main">
         <div class="player-main-inner">
-        {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-        <div class="player-artwork-container">
-            {% if song['image_url'] %}
-                <img class="player-artwork" src="{{ song['image_url'] }}" alt="Album Art" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="player-artwork player-artwork-fallback">♪</div>
-            {% endif %}
-
-        </div>
-        <div class="player-details">
-            <h1 class="player-track-title">{{ song['title'] }}</h1>
-            <p class="player-track-artist">{{ song['artist'] }}</p>
-            <p class="player-track-meta">{{ song['genre'] }} · {{ (song['energy'] * 100) | int }}% energy</p>
-
-            <div class="player-like-section">
-                <button class="player-like-btn" id="player-page-like" data-song-id="{{ song['id'] }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-                    <span>Like</span>
-                </button>
-                <button class="player-dislike-btn" id="player-page-dislike" data-song-id="{{ song['id'] }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/></svg>
-                    <span>Dislike</span>
-                </button>
+            <div class="player-artwork-container">
+                {% if song.get('image_url') %}
+                    <img class="player-artwork" src="{{ song['image_url'] }}" alt="Album Art" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/cover.jpg') }}';">
+                {% else %}
+                    <div class="player-artwork player-artwork-fallback">♪</div>
+                {% endif %}
             </div>
+            <div class="player-details">
+                <h1 class="player-track-title">{{ song['title'] }}</h1>
+                <p class="player-track-artist">{{ song['artist'] }}</p>
+                <p class="player-track-meta">{{ song['genre'] }} · {{ (song['energy'] * 100) | int }}% energy</p>
 
-            <div class="player-playlist-section">
-                <button class="add-to-playlist-btn" id="playlist-add-btn" data-song-id="{{ song['id'] }}">
-                    <i class="fas fa-plus"></i> Add to Playlist
-                </button>
+                <div class="player-like-section">
+                    <button class="player-like-btn" id="player-page-like" data-song-id="{{ song['id'] }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                        <span>Like</span>
+                    </button>
+                    <button class="player-dislike-btn" id="player-page-dislike" data-song-id="{{ song['id'] }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/></svg>
+                        <span>Dislike</span>
+                    </button>
+                </div>
 
-                <div class="playlist-picker" id="playlist-picker">
-                    <div class="picker-header">Add to playlist</div>
+                <div class="player-playlist-section">
+                    <button class="add-to-playlist-btn" id="playlist-add-btn" data-song-id="{{ song['id'] }}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add to Playlist
+                    </button>
 
-                    <div class="picker-row">
-                        <select id="playlist-select">
-                            <option value="">Choose playlist...</option>
-                            <option value="__create__">+ Create new...</option>
-                        </select>
-                        <button class="picker-add-btn" id="confirm-add-playlist">Add</button>
-                    </div>
-
-                    <div class="picker-create-row" id="picker-create-row">
-                        <input type="text" id="new-playlist-input" placeholder="New playlist name..." maxlength="100">
-                        <button class="picker-create-btn" id="create-new-playlist-btn">Create</button>
+                    <div class="playlist-picker" id="playlist-picker">
+                        <div class="picker-header">Add to playlist</div>
+                        <div class="picker-row">
+                            <select id="playlist-select">
+                                <option value="">Choose playlist...</option>
+                                <option value="__create__">+ Create new...</option>
+                            </select>
+                            <button class="picker-add-btn" id="confirm-add-playlist">Add</button>
+                        </div>
+                        <div class="picker-create-row" id="picker-create-row">
+                            <input type="text" id="new-playlist-input" placeholder="New playlist name..." maxlength="100">
+                            <button class="picker-create-btn" id="create-new-playlist-btn">Create</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         </div>
     </div>
 
-    <div class="player-recommendations" style="flex: 1 !important; display: flex !important; flex-direction: column !important; padding-left: 20px !important; box-sizing: border-box !important; min-height: 0 !important;">
+    <div class="player-recommendations">
         <h3>Up Next: {{ playlist_name }}</h3>
         <div class="queue-scroll-box">
-        <div class="rec-list">
-            {% for rec in recommendations %}
-            <a href="/player/{{ rec['id'] }}{% if playlist_id %}?playlist_id={{ playlist_id }}{% endif %}" class="rec-item">
-                {% set rec_mood = 'happy' if rec['energy'] >= 0.5 else 'relax' %}
-                {% if rec['image_url'] %}
-                    <img class="rec-img" src="{{ rec['image_url'] }}" alt="cover" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-                {% else %}
-                    <div class="rec-img-fallback">♪</div>
-                {% endif %}
-                <div class="rec-info">
-                    <span class="rec-name">{{ rec['title'] }}</span>
-                    <span class="rec-artist">{{ rec['artist'] }}</span>
-                </div>
-                <svg class="rec-play-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            </a>
-            {% endfor %}
-        </div>
+            <div class="rec-list">
+                {% for rec in recommendations %}
+                <a href="/player/{{ rec['id'] }}?autoplay=true{% if playlist_id %}&playlist_id={{ playlist_id }}{% endif %}" class="rec-item">
+                    {% if rec['image_url'] %}
+                        <img class="rec-img" src="{{ rec['image_url'] }}" alt="cover" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/cover.jpg') }}';">
+                    {% else %}
+                        <div class="rec-img-fallback">♪</div>
+                    {% endif %}
+                    <div class="rec-info">
+                        <span class="rec-name">{{ rec['title'] }}</span>
+                        <span class="rec-artist">{{ rec['artist'] }}</span>
+                    </div>
+                    <svg class="rec-play-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </a>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
 
+<script>
+(function() {
+    // Smart back navigation: on a direct/full page load to the player page,
+    // remember the referring page so the bottom-right expand/collapse button
+    // can return the user to it (SPA navigation already saves this in navigateTo).
+    try {
+        if (!sessionStorage.getItem('previousPage')) {
+            var ref = document.referrer || '';
+            if (ref && ref.indexOf(window.location.origin) === 0) {
+                var path = ref.slice(window.location.origin.length);
+                if (!/^\/player\//.test(path)) {
+                    sessionStorage.setItem('previousPage', path);
+                }
+            }
+        }
+    } catch (e) {}
+})();
+</script>
 <script id="song-data" type="application/json">
 {
     "id": {{ song['id'] }},
@@ -95,12 +109,27 @@
     "genre": {{ song['genre']|tojson|safe }},
     "energy": {{ song['energy'] }},
     "file_path": "{{ url_for('static', filename='songs/' + song['file_path']) if song.get('file_path') and song['file_path'].strip() else '' }}",
-    "image_url": "{{ song['image_url'] if song['image_url'] else '' }}"{% if playlist_id %},"playlist_id": {{ playlist_id }}{% endif %}
+    "image_url": {{ song.get('image_url')|tojson|safe }}{% if playlist_id %},
+    "playlist_id": {{ playlist_id }}{% endif %}
 }
 </script>
 <script>
 (function() {
     var songData = JSON.parse(document.getElementById('song-data').textContent);
+    var wantPlay = /[?&]autoplay=true/.test(window.location.search);
+    var wantResume = null;
+    var state = null;
+    try { state = JSON.parse(localStorage.getItem('neko_player_state') || 'null'); } catch (e) {}
+    if (state && state.song_id && String(state.song_id) === String(songData.id)) {
+        if (state.is_playing) {
+            wantPlay = true;
+            wantResume = state.current_time;
+        } else if (state.current_time > 0) {
+            wantResume = state.current_time;
+        }
+    }
+    songData.play_requested = wantPlay;
+    if (wantResume != null) songData.resume_time = wantResume;
     window.dispatchEvent(new CustomEvent('song:play', { detail: songData }));
 })();
 </script>
@@ -116,40 +145,43 @@
     var createInput = document.getElementById('new-playlist-input');
     var createBtn = document.getElementById('create-new-playlist-btn');
 
-    function populateSelect(selectEl, selectedVal) {
+    var ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+    function populateSelect(selectedVal) {
         fetch('/get_playlists')
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                selectEl.innerHTML = '<option value="">Choose playlist...</option>';
+                select.innerHTML = '<option value="">Choose playlist...</option>';
                 if (data.playlists) {
                     data.playlists.forEach(function(pl) {
                         var opt = document.createElement('option');
                         opt.value = pl.id;
                         opt.textContent = pl.name + ' (' + pl.song_count + ')';
                         if (selectedVal && pl.id == selectedVal) opt.selected = true;
-                        selectEl.appendChild(opt);
+                        select.appendChild(opt);
                     });
                 }
                 var createOpt = document.createElement('option');
                 createOpt.value = '__create__';
                 createOpt.textContent = '+ Create new...';
-                selectEl.appendChild(createOpt);
+                select.appendChild(createOpt);
             })
             .catch(function() {});
     }
 
-    populateSelect(select);
+    populateSelect();
 
     addBtn.addEventListener('click', function() {
         var isOpen = picker.classList.contains('open');
         picker.classList.toggle('open');
-        addBtn.innerHTML = isOpen
-            ? '<i class="fas fa-plus"></i> Add to Playlist'
-            : '<i class="fas fa-times"></i> Cancel';
-        if (!isOpen) {
-            createRow.classList.remove('open');
-            createInput.value = '';
+        if (isOpen) {
+            addBtn.innerHTML = ADD_ICON + ' Add to Playlist';
+        } else {
+            populateSelect();
+            addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel';
         }
+        createRow.classList.remove('open');
+        createInput.value = '';
     });
 
     select.addEventListener('change', function() {
@@ -175,7 +207,7 @@
             })
             .then(function(data) {
                 if (data.success) {
-                    addBtn.innerHTML = '<i class="fas fa-check"></i> Added!';
+                    addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Added!';
                     addBtn.style.borderColor = '#00ff66';
                     addBtn.style.color = '#00ff66';
                     picker.classList.remove('open');
@@ -195,12 +227,12 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.success) {
-                    populateSelect(select, data.playlist_id);
+                    populateSelect(data.playlist_id);
                     select.value = data.playlist_id;
                 }
                 createRow.classList.remove('open');
                 createInput.value = '';
-                addBtn.innerHTML = '<i class="fas fa-plus"></i> Add to Playlist';
+                addBtn.innerHTML = ADD_ICON + ' Add to Playlist';
                 addBtn.style.borderColor = '';
                 addBtn.style.color = '';
             })
@@ -228,7 +260,6 @@
     if (!likeBtn || !dislikeBtn) return;
     var songId = likeBtn.getAttribute('data-song-id');
 
-    // Listen for sync events from the player bar
     window.addEventListener('like:sync', function(e) {
         var liked = e.detail.liked;
         likeBtn.classList.remove('active');
@@ -269,9 +300,6 @@
         .catch(function(err) { console.error(err); });
     });
 
-    // Initial fetch — the player bar's fetchLikeStatus (called from loadSong)
-    // will dispatch like:sync, but we also fetch here in case we load outside
-    // the bar flow.
     fetch('/api/like_status/' + songId)
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -280,9 +308,4 @@
         .catch(function() {});
 })();
 </script>
-
-{% endblock %}
-
-{% block body %}
-{{ super() }}
 {% endblock %}

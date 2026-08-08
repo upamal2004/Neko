@@ -1,6 +1,6 @@
 {% extends "base_app.html" %}
 
-{% block title %}History — MusicApp{% endblock %}
+{% block title %}History — Neko{% endblock %}
 
 {% block app_content %}
 <div class="history-header">
@@ -9,7 +9,7 @@
         <p>Your recently played tracks.</p>
     </div>
     {% if history %}
-    <form action="/clear_history" method="POST" onsubmit="return confirm('Clear your entire listening history?');">
+    <form action="/clear_history" method="POST" id="clear-history-form">
         <button type="submit" class="btn btn-danger">Clear All</button>
     </form>
     {% endif %}
@@ -59,24 +59,83 @@
 </div>
 {% endif %}
 
+<div class="confirm-modal-overlay" id="confirm-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="confirm-modal">
+        <div class="confirm-modal-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+        </div>
+        <h3 class="confirm-modal-title" id="confirm-modal-title">Are you sure?</h3>
+        <p class="confirm-modal-message" id="confirm-modal-message"></p>
+        <div class="confirm-modal-actions">
+            <button type="button" class="confirm-btn confirm-cancel" id="confirm-cancel">Cancel</button>
+            <button type="button" class="confirm-btn confirm-delete" id="confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
+    var overlay = document.getElementById('confirm-modal-overlay');
+    var message = document.getElementById('confirm-modal-message');
+    var deleteBtn = document.getElementById('confirm-delete');
+    var cancelBtn = document.getElementById('confirm-cancel');
+    var pendingAction = null;
+
+    function confirmAction(text, action) {
+        message.textContent = text;
+        pendingAction = action;
+        overlay.classList.add('open');
+        deleteBtn.focus();
+    }
+
+    function closeConfirm() {
+        overlay.classList.remove('open');
+        pendingAction = null;
+    }
+
+    cancelBtn.addEventListener('click', closeConfirm);
+
+    deleteBtn.addEventListener('click', function() {
+        var action = pendingAction;
+        closeConfirm();
+        if (action) action();
+    });
+
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) closeConfirm();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeConfirm();
+    });
+
+    var clearForm = document.getElementById('clear-history-form');
+    if (clearForm) {
+        clearForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            confirmAction('This will permanently delete your entire listening history.', function() {
+                clearForm.submit();
+            });
+        });
+    }
+
     document.querySelectorAll('.del-history-btn').forEach(function(btn) {
         btn.addEventListener('click', function(e) {
             e.preventDefault();
             var id = this.getAttribute('data-id');
             var row = this.closest('tr');
-            if (!confirm('Remove this entry from history?')) return;
-            fetch('/delete_history/' + id, { method: 'POST' })
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    if (data.success) {
-                        row.style.transition = 'opacity 0.3s';
-                        row.style.opacity = '0';
-                        setTimeout(function() { row.remove(); }, 300);
-                    }
-                })
-                .catch(function(err) { console.error(err); });
+            confirmAction('This entry will be permanently removed from your history.', function() {
+                fetch('/delete_history/' + id, { method: 'POST' })
+                    .then(function(r) { return r.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            row.style.transition = 'opacity 0.3s';
+                            row.style.opacity = '0';
+                            setTimeout(function() { row.remove(); }, 300);
+                        }
+                    })
+                    .catch(function(err) { console.error(err); });
+            });
         });
     });
 })();

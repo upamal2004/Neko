@@ -909,8 +909,22 @@ def view_playlists():
         FROM playlists_new p WHERE p.user_id = ?
         ORDER BY p.created_at DESC
     ''', (session['user_id'],)).fetchall()
+    # For the card grid: collect up to 4 cover thumbnails + the first song id per playlist
+    result = []
+    for pl in playlists:
+        item = dict(pl)
+        pl_songs = conn.execute('''
+            SELECT s.id, s.image_url FROM playlist_songs ps
+            JOIN songs s ON ps.song_id = s.id
+            WHERE ps.playlist_id = ?
+            ORDER BY ps.added_at DESC
+            LIMIT 4
+        ''', (pl['id'],)).fetchall()
+        item['covers'] = [s['image_url'] for s in pl_songs if s['image_url']]
+        item['first_song_id'] = pl_songs[0]['id'] if pl_songs else None
+        result.append(item)
     conn.close()
-    return render_template('playlist.html', playlists=playlists, active_playlist=None, songs=[])
+    return render_template('playlist.html', playlists=result, active_playlist=None, songs=[])
 
 @app.route('/get_playlists')
 def get_playlists_api():
@@ -1067,33 +1081,26 @@ def logout():
     session.clear()
     return redirect('/login')
 
-@app.route('/player/<int:song_id>')
-def player(song_id):
-    if 'user_id' not in session:
-        return redirect('/login')
-    
-    playlist_id = request.args.get('playlist_id', type=int)
-    
+def build_player_context(song_id, playlist_id=None):
+    """Return (song, recommendations, playlist_name, playlist_id) for the full player."""
     conn = get_db_connection()
     song = conn.execute('SELECT * FROM songs WHERE id = ?', (song_id,)).fetchone()
     if not song:
         conn.close()
-        return redirect('/')
-    
-    # Ensure a valid audio path — fall back to silent default if missing
+        return None, None, None, None
+
     song = dict(song)
     if not song.get('file_path') or song['file_path'].strip() == '':
         song['file_path'] = 'default.mp3'
-    
+
     recommendations = []
     playlist_name = "Recommended Suggestions"
     if playlist_id:
-        # Get playlist name
         pl_info = conn.execute('SELECT name FROM playlists_new WHERE id = ?',
                                (playlist_id,)).fetchone()
         if pl_info:
             playlist_name = pl_info['name']
-        # 1. Get all playlist-song records in exact sequence (matching playlist view order)
+        # Get all playlist-song records in exact sequence (matching playlist view order)
         pl_rows = conn.execute('''
             SELECT ps.song_id FROM playlist_songs ps
             WHERE ps.playlist_id = ?
@@ -1110,7 +1117,6 @@ def player(song_id):
                 fetched = conn.execute(f'''
                     SELECT * FROM songs WHERE id IN ({placeholders})
                 ''', next_song_ids).fetchall()
-                # Re-sort to match exact playlist order
                 id_map = {s['id']: s for s in fetched}
                 recommendations = [id_map[sid] for sid in next_song_ids if sid in id_map]
         # If no remaining songs in playlist, fall back to default recommendations
@@ -1124,8 +1130,37 @@ def player(song_id):
             'SELECT * FROM songs WHERE genre = ? AND id != ? ORDER BY RANDOM() LIMIT 6',
             (song['genre'], song_id)
         ).fetchall()
-    
-    # Backend history logging trigger (fires on page load, independent of audio file)
+
+    conn.close()
+    return song, recommendations, playlist_name, playlist_id
+
+
+def serialize_song(song):
+    """Turn a DB song dict into the JSON shape used by the client player."""
+    return {
+        'id': song['id'],
+        'title': song['title'],
+        'artist': song['artist'],
+        'genre': song['genre'],
+        'energy': song['energy'],
+        'file_path': url_for('static', filename='songs/' + song['file_path']) if song.get('file_path') else '',
+        'image_url': song.get('image_url') or ''
+    }
+
+
+@app.route('/player/<int:song_id>')
+def player(song_id):
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    playlist_id = request.args.get('playlist_id', type=int)
+
+    song, recommendations, playlist_name, playlist_id = build_player_context(song_id, playlist_id)
+    if not song:
+        return redirect('/')
+
+    # Backend history logging trigger (fires on direct page load, independent of audio file)
+    conn = get_db_connection()
     try:
         lk_tz = pytz.timezone('Asia/Colombo')
         naive_local_time = datetime.now(lk_tz).replace(tzinfo=None)
@@ -1134,10 +1169,28 @@ def player(song_id):
         conn.commit()
     except Exception as e:
         pass
-    
     conn.close()
-    
+
     return render_template('player.html', song=song, recommendations=recommendations, playlist_id=playlist_id, playlist_name=playlist_name)
+
+
+@app.route('/api/player/<int:song_id>')
+def api_player(song_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    playlist_id = request.args.get('playlist_id', type=int)
+    song, recommendations, playlist_name, playlist_id = build_player_context(song_id, playlist_id)
+    if not song:
+        return jsonify({'error': 'Not found'}), 404
+
+    recs = [serialize_song(dict(r)) for r in recommendations]
+    return jsonify({
+        'song': serialize_song(song),
+        'recommendations': recs,
+        'playlist_name': playlist_name,
+        'playlist_id': playlist_id
+    })
 
 @app.route('/api/song/<int:song_id>')
 def api_song(song_id):
@@ -1149,9 +1202,9 @@ def api_song(song_id):
     if not song:
         return jsonify({'error': 'Not found'}), 404
     song = dict(song)
-    mood = 'happy' if song['energy'] >= 0.5 else 'relax'
-    image_url = ''
-    if song['genre'] in ('Pop', 'Rock', 'Classical'):
+    image_url = song.get('image_url') or ''
+    if not image_url and song['genre'] in ('Pop', 'Rock', 'Classical'):
+        mood = 'happy' if song['energy'] >= 0.5 else 'relax'
         image_url = url_for('static', filename='images/' + song['genre'] + ' ' + mood + '.jpg')
     return jsonify({
         'id': song['id'],

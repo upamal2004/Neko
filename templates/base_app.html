@@ -390,11 +390,10 @@
         }
 
         // Opening the full player page re-dispatches the song that is already
-        // playing in the mini-player. When it is the exact same file, keep the
-        // audio element untouched so playback never pauses, reloads or seeks back.
+        // playing in the mini-player. When it is the exact same track, keep the
+        // media untouched so playback never pauses, reloads or seeks back.
         var sameSongPlaying = !!(currentSong && currentSong.id !== undefined &&
             String(currentSong.id) === String(song.id) &&
-            audio.getAttribute('src') === src &&
             !audio.paused);
 
         currentSong = song;
@@ -419,7 +418,7 @@
 
         fetchLikeStatus(song.id);
 
-        // Already playing this exact file — no audio changes needed.
+        // Already playing this exact track — no media changes needed.
         if (sameSongPlaying) return;
 
         if (audio.getAttribute('src') !== src) {
@@ -427,9 +426,6 @@
             audio.load();
         }
 
-        // Auto-play only when explicitly requested (Play-button click or a queued
-        // next track). A stale ?autoplay=true left in the URL after a reload must
-        // NOT override a saved paused state — loadSong never plays from the URL.
         if (playRequested) {
             var doAutoPlay = function() {
                 if (resumeTime > 0 && isFinite(resumeTime)) {
@@ -455,19 +451,20 @@
 
     // ===== PLAYBACK CONTROLS =====
     function updatePlayBtn() {
-        if (audio.paused) {
-            playBtn.innerHTML = ICON_PLAY;
-        } else {
+        if (!audio.paused) {
             playBtn.innerHTML = ICON_PAUSE;
+        } else {
+            playBtn.innerHTML = ICON_PLAY;
         }
     }
 
     function handlePlayClick(e) {
         e.preventDefault();
-        if (audio.paused) {
-            audio.play();
-        } else {
+        if (!audio.paused) {
             audio.pause();
+        } else {
+            var p = audio.play();
+            if (p && p.catch) p.catch(function() {});
         }
     }
 
@@ -498,6 +495,7 @@
         }
     });
 
+    // ===== PLAYBACK STATE =====
     audio.addEventListener('play', function() {
         updatePlayBtn();
         playerBar.classList.add('is-playing');
@@ -531,12 +529,13 @@
     });
 
     audio.addEventListener('timeupdate', function() {
-        if (audio.duration) {
-            var pct = (audio.currentTime / audio.duration) * 100;
+        var dur = audio.duration;
+        if (dur && dur > 0) {
+            var pct = (audio.currentTime / dur) * 100;
             progress.value = pct;
             progress.style.setProperty('--progress', pct + '%');
-            curTime.textContent = formatTime(audio.currentTime);
         }
+        curTime.textContent = formatTime(audio.currentTime);
         persistPlayerState();
     });
 
@@ -545,13 +544,15 @@
     });
 
     progress.addEventListener('input', function() {
-        if (audio.duration) {
-            audio.currentTime = (this.value / 100) * audio.duration;
+        var dur = audio.duration;
+        if (dur && dur > 0) {
+            audio.currentTime = (this.value / 100) * dur;
         }
     });
 
     volumeSlider.addEventListener('input', function() {
-        audio.volume = this.value;
+        var vol = parseFloat(this.value);
+        audio.volume = vol;
         this.style.setProperty('--vol-progress', (this.value * 100) + '%');
         updateVolumeIcon();
         persistPlayerState();
@@ -571,7 +572,7 @@
         volumeBtn.innerHTML = html;
     }
 
-    audio.volume = parseFloat(volumeSlider.value);
+    audio.volume = parseFloat(volumeSlider.value) || 0.7;
 
     // ===== LIKE / DISLIKE (sync via custom event) =====
     var likeBtn = document.getElementById('player-like-btn');
@@ -867,72 +868,52 @@
 
         // Always restore the volume
         if (state && typeof state.volume === 'number' && isFinite(state.volume)) {
-            audio.volume = Math.min(1, Math.max(0, state.volume));
-            volumeSlider.value = audio.volume;
-            volumeSlider.style.setProperty('--vol-progress', (audio.volume * 100) + '%');
+            var restoredVol = Math.min(1, Math.max(0, state.volume));
+            audio.volume = restoredVol;
+            volumeSlider.value = restoredVol;
+            volumeSlider.style.setProperty('--vol-progress', (restoredVol * 100) + '%');
             updateVolumeIcon();
         }
 
         if (!state || !state.song_id) return;
 
-        var onPlayerPage = /^\/player\/\d+/.test(window.location.pathname);
-
-        function resumeTrack(savedTime) {
-            var doResume = function() {
-                if (savedTime > 0 && isFinite(savedTime)) {
-                    try { audio.currentTime = savedTime; } catch (e) {}
-                }
-                var p = audio.play();
-                if (p && p.catch) p.catch(function() {});
-            };
-            if (audio.readyState >= 1) {
-                doResume();
-            } else {
-                audio.addEventListener('canplay', doResume, { once: true });
-            }
-        }
-
-        function seekTo(savedTime) {
-            audio.addEventListener('loadedmetadata', function() {
-                try { audio.currentTime = savedTime; } catch (e) {}
-            }, { once: true });
-        }
-
+        // Re-dispatch the saved track. loadSong interprets play_requested and
+        // resume_time, so the resume (seek + play) is handled entirely inside
+        // loadSong.
         function startSavedSong(song) {
-            window.dispatchEvent(new CustomEvent('song:play', { detail: song }));
+            var detail = song;
+            try { detail = JSON.parse(JSON.stringify(song)); } catch (e) {}
             if (state.is_playing) {
-                resumeTrack(state.current_time);
+                detail.play_requested = true;
+                detail.resume_time = state.current_time;
             } else if (state.current_time > 0) {
-                seekTo(state.current_time);
+                detail.resume_time = state.current_time;
             }
+            window.dispatchEvent(new CustomEvent('song:play', { detail: detail }));
         }
 
-        if (onPlayerPage) {
-            // The player page's own song is authoritative.
-            if (currentSong && currentSong.id) {
-                var matches = String(currentSong.id) === String(state.song_id);
-                if (state.is_playing) {
-                    resumeTrack(matches ? state.current_time : 0);
-                } else if (state.current_time > 0 && matches) {
-                    seekTo(state.current_time);
-                }
-            }
-            return;
-        }
+        // On the player page the page's own script re-dispatches the song with
+        // the correct play_requested / resume_time flags, so nothing extra runs.
+        if (/^\/player\/\d+/.test(window.location.pathname)) return;
 
-        // Non-player page: load the saved song, then resume.
+        // Non-player page: load the saved song from the session cache, falling
+        // back to the API when the cache is missing or stale.
         var cached = null;
         try { cached = JSON.parse(sessionStorage.getItem('currentSong') || 'null'); } catch (e) {}
         if (cached && cached.id && String(cached.id) === String(state.song_id)) {
             startSavedSong(cached);
-            return;
+        } else {
+            fetch('/api/song/' + state.song_id)
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data && data.id) startSavedSong(data);
+                })
+                .catch(function() {
+                    if (cached && cached.id && String(cached.id) === String(state.song_id)) {
+                        startSavedSong(cached);
+                    }
+                });
         }
-        fetch('/api/song/' + state.song_id)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data && data.id) startSavedSong(data);
-            })
-            .catch(function() {});
     })();
 
     window.addEventListener('beforeunload', function() {
@@ -1001,6 +982,31 @@
         window.addEventListener('load', hide);
         setTimeout(hide, 4000);
     }
+})();
+</script>
+
+<script>
+// Clicking a play button on any song card SPA-navigates to the full player page.
+// The player page (?autoplay=true) starts playback in the persistent background
+// player, so the user lands on /player/<id> while audio plays immediately.
+(function() {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-play');
+        if (!btn) return;
+        var card = e.target.closest('.song-card');
+        if (!card) return;
+        e.preventDefault();
+        var id = card.getAttribute('data-song-id');
+        if (!id) return;
+        var url = '/player/' + id + '?autoplay=true';
+        var pid = card.getAttribute('data-playlist-id');
+        if (pid) url += '&playlist_id=' + pid;
+        if (window.navigateTo) {
+            window.navigateTo(url);
+        } else {
+            window.location.href = url;
+        }
+    });
 })();
 </script>
 {% endblock %}

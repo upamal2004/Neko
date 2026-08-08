@@ -55,7 +55,7 @@
 
         <div class="song-grid">
             {% for song in songs %}
-            <div class="song-card">
+            <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}" data-playlist-id="{{ active_playlist['id'] }}">
                 <div class="song-cover">
                     {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
                     {% if song['image_url'] %}
@@ -64,7 +64,7 @@
                         <div class="cover-fallback">♪</div>
                     {% endif %}
                     <div class="play-overlay">
-                        <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true&playlist_id={{ active_playlist['id'] }}')">
+                        <button class="btn-play">
                             <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                         </button>
                     </div>
@@ -75,7 +75,7 @@
                     <span class="song-genre">{{ song['genre'] }}</span>
                 </div>
                 <div class="song-card-actions">
-                    <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true&playlist_id={{ active_playlist['id'] }}')">
+                    <button class="btn-play">
                         <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                     </button>
                     <button class="playlist-add-btn" data-playlist-id="{{ active_playlist['id'] }}" data-song-id="{{ song['id'] }}" title="Remove from playlist">×</button>

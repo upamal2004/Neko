@@ -3,6 +3,7 @@
 {% block title %}Home — Neko{% endblock %}
 
 {% block app_content %}
+<div id="home-content">
 <div class="hero-banner">
     <div class="hero-overlay"></div>
     <div class="hero-content">
@@ -68,12 +69,12 @@
 
 <div class="song-row song-row-vertical">
     {% for song in artist_songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -84,7 +85,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -106,12 +107,12 @@
 <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:12px;">Curated picks for this time of day</p>
 <div class="song-row">
     {% for song in time_songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -122,7 +123,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -138,12 +139,12 @@
 
 <div class="song-row">
     {% for song in songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -154,7 +155,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -174,12 +175,12 @@
 
 <div class="song-row">
     {% for song in liked_songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -190,7 +191,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -209,12 +210,12 @@
 
 <div class="song-row">
     {% for song in energy_recommended_songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -225,7 +226,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -267,12 +268,12 @@
 
 <div class="song-row song-row-vertical">
     {% for song in songs %}
-    <div class="song-card">
+    <div class="song-card" data-song-id="{{ song['id'] }}" data-title="{{ song['title'] }}" data-artist="{{ song['artist'] }}" data-genre="{{ song['genre'] }}" data-energy="{{ song['energy'] }}" data-image="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" data-file="{{ url_for('static', filename='songs/' + song['file_path']) if song['file_path'] else '' }}">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
             <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
-                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <button class="btn-play">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 </button>
             </div>
@@ -283,7 +284,7 @@
             <span class="song-genre">{{ song['genre'] }}</span>
         </div>
         <div class="song-card-actions">
-            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+            <button class="btn-play">
                 <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </button>
             {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
@@ -311,6 +312,20 @@
 {% endif %}
 
 {% endif %}
+
+</div>
+
+<!-- Isolated live-search results grid (hidden until the user types) -->
+<div id="search-view" class="search-view" hidden>
+    <div class="search-view-header">
+        <h2 style="font-size:1.4rem; font-weight:700; margin:0;">Search Results</h2>
+        <span id="search-view-count" style="color:var(--text-secondary); font-size:0.85rem;"></span>
+    </div>
+    <div class="song-row song-row-vertical" id="search-view-grid" style="padding-left:0; padding-right:0;"></div>
+    <div class="empty-state" id="search-view-empty" hidden>
+        <p>No tracks found.</p>
+    </div>
+</div>
 
 <script>
 function goToPage(p) {
@@ -373,44 +388,165 @@ document.querySelectorAll('.add-to-playlist-btn').forEach(function(button) {
     });
 });
 
-// Search suggestions
+// Live search: typing shows a compact dropdown preview only. Enter, the search
+// icon, or picking a dropdown item runs the full in-page search grid view.
 (function() {
     var input = document.getElementById('search-input');
-    var container = document.getElementById('search-suggestions');
-    if (!input || !container) return;
+    var dropdown = document.getElementById('search-suggestions');
+    var homeContent = document.getElementById('home-content');
+    var searchView = document.getElementById('search-view');
+    var grid = document.getElementById('search-view-grid');
+    var empty = document.getElementById('search-view-empty');
+    var countEl = document.getElementById('search-view-count');
+    if (!input || !dropdown || !homeContent || !searchView || !grid) return;
     var timer;
+    var lastVal = '';
+    var activeQuery = '';
+
+    function hideDropdown() {
+        dropdown.classList.remove('active');
+        dropdown.innerHTML = '';
+    }
+
+    function setSearchMode(active) {
+        if (active) {
+            homeContent.classList.add('search-mode');
+            searchView.hidden = false;
+        } else {
+            homeContent.classList.remove('search-mode');
+            searchView.hidden = true;
+            grid.innerHTML = '';
+            empty.hidden = true;
+            countEl.textContent = '';
+        }
+    }
+
+    function renderGrid(items) {
+        grid.innerHTML = '';
+        if (!items || items.length === 0) {
+            empty.hidden = false;
+            countEl.textContent = '';
+            return;
+        }
+        empty.hidden = true;
+        countEl.textContent = items.length + ' track' + (items.length === 1 ? '' : 's') + ' found';
+        items.forEach(function(s) {
+            var card = document.createElement('div');
+            card.className = 'song-card';
+            card.setAttribute('data-song-id', s.id);
+            card.setAttribute('data-title', s.title);
+            card.setAttribute('data-artist', s.artist);
+            card.setAttribute('data-genre', s.genre);
+            card.setAttribute('data-energy', s.energy);
+            card.setAttribute('data-image', s.image_url || '');
+            card.setAttribute('data-file', s.file_path || '');
+
+            var imgSrc = s.image_url || '/static/images/cover.jpg';
+            var svg = '<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+            card.innerHTML =
+                '<div class="song-cover">' +
+                    '<img src="' + imgSrc + '" alt="' + escapeHtml(s.genre) + '" class="cover-img" onerror="this.onerror=null; this.src=\'/static/images/cover.jpg\'">' +
+                    '<div class="play-overlay"><button class="btn-play" type="button">' + svg + '</button></div>' +
+                '</div>' +
+                '<div class="song-info">' +
+                    '<a href="/player/' + s.id + '" class="song-title">' + escapeHtml(s.title) + '</a>' +
+                    '<span class="song-artist">' + escapeHtml(s.artist) + '</span>' +
+                    '<span class="song-genre">' + escapeHtml(s.genre) + '</span>' +
+                '</div>' +
+                '<div class="song-card-actions">' +
+                    '<button class="btn-play" type="button">' + svg + '</button>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    function runFullSearch(query) {
+        query = (query || '').trim();
+        if (query.length === 0) { setSearchMode(false); return; }
+        activeQuery = query;
+        setSearchMode(true);
+        hideDropdown();
+        fetch('/search_suggestions?query=' + encodeURIComponent(query))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (input.value.trim() !== activeQuery) return;
+                renderGrid(data.suggestions);
+            })
+            .catch(function() {});
+    }
+
+    function renderDropdown(items) {
+        dropdown.innerHTML = '';
+        var shown = (items || []).slice(0, 8);
+        if (shown.length === 0) return;
+        shown.forEach(function(s) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'sug-item';
+            item.setAttribute('data-title', s.title);
+            var img = s.image_url
+                ? '<img src="' + s.image_url + '" class="sug-img" alt="">'
+                : '<div class="sug-img-fallback">♪</div>';
+            item.innerHTML = img
+                + '<span class="sug-info">'
+                + '<span class="sug-title">' + escapeHtml(s.title) + '</span>'
+                + '<span class="sug-artist">' + escapeHtml(s.artist) + '</span>'
+                + '</span>';
+            dropdown.appendChild(item);
+        });
+        dropdown.classList.add('active');
+    }
+
+    // Keep focus inside the input while interacting with the dropdown.
+    dropdown.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+    });
+
+    dropdown.addEventListener('click', function(e) {
+        var item = e.target.closest('.sug-item');
+        if (!item) return;
+        var title = item.getAttribute('data-title');
+        input.value = title;
+        runFullSearch(title);
+    });
+
+    var form = input.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            runFullSearch(input.value);
+        });
+    }
 
     input.addEventListener('input', function() {
         clearTimeout(timer);
         var val = this.value.trim();
-        if (val.length < 1) { container.innerHTML = ''; container.classList.remove('active'); return; }
+        if (val === lastVal) return;
+        lastVal = val;
+        if (val.length < 1) {
+            hideDropdown();
+            setSearchMode(false);
+            return;
+        }
         timer = setTimeout(function() {
             fetch('/search_suggestions?query=' + encodeURIComponent(val))
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    if (!data.suggestions || data.suggestions.length === 0) {
-                        container.innerHTML = ''; container.classList.remove('active'); return;
-                    }
-                    var html = '';
-                    data.suggestions.forEach(function(s) {
-                        var img = s.image_url
-                            ? '<img src="' + s.image_url + '" class="sug-img" alt="">'
-                            : '<div class="sug-img-fallback">♪</div>';
-                        html += '<a href="/player/' + s.id + '" class="sug-item">'
-                            + img
-                            + '<div class="sug-info"><span class="sug-title">' + escapeHtml(s.title) + '</span><span class="sug-artist">' + escapeHtml(s.artist) + '</span></div>'
-                            + '</a>';
-                    });
-                    container.innerHTML = html;
-                    container.classList.add('active');
+                    if (input.value.trim() !== lastVal) return;
+                    renderDropdown(data.suggestions);
                 })
                 .catch(function() {});
         }, 200);
     });
 
+    input.addEventListener('blur', function() {
+        setTimeout(hideDropdown, 150);
+    });
+
     document.addEventListener('click', function(e) {
-        if (!container.contains(e.target) && e.target !== input) {
-            container.classList.remove('active');
+        var section = document.querySelector('.search-section');
+        if (section && !section.contains(e.target)) {
+            hideDropdown();
         }
     });
 

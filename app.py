@@ -365,7 +365,7 @@ def search_suggestions():
         return jsonify({'suggestions': []})
     conn = get_db_connection()
     songs = conn.execute(
-        "SELECT id, title, artist, genre, energy FROM songs WHERE title LIKE ? OR artist LIKE ? LIMIT 8",
+        "SELECT id, title, artist, genre, energy, file_path FROM songs WHERE title LIKE ? OR artist LIKE ? LIMIT 24",
         ('%' + query + '%', '%' + query + '%')
     ).fetchall()
     conn.close()
@@ -390,7 +390,9 @@ def search_suggestions():
             'title': s['title'],
             'artist': s['artist'],
             'genre': s['genre'],
-            'image_url': image_url
+            'energy': s['energy'],
+            'image_url': image_url,
+            'file_path': url_for('static', filename='songs/' + s['file_path']) if s['file_path'] else ''
         })
     return jsonify({'suggestions': results})
 
@@ -556,9 +558,9 @@ def smart_next():
                 'SELECT * FROM songs ORDER BY RANDOM() LIMIT 1'
             ).fetchone()
 
-    conn.close()
-
     if next_song:
+        next_song = dict(next_song)
+        conn.close()
         return jsonify({
             "status": "success",
             "song": {
@@ -570,6 +572,7 @@ def smart_next():
                 "file_path": url_for('static', filename='songs/' + next_song['file_path'])
             }
         })
+    conn.close()
     return jsonify({"status": "error", "message": "No songs found"}), 404
 
 @app.route('/profile')
@@ -1267,8 +1270,8 @@ def api_song(song_id):
         return jsonify({'error': 'Unauthorized'}), 401
     conn = get_db_connection()
     song = conn.execute('SELECT * FROM songs WHERE id = ?', (song_id,)).fetchone()
-    conn.close()
     if not song:
+        conn.close()
         return jsonify({'error': 'Not found'}), 404
     song = dict(song)
     image_url = song.get('image_url') or ''
@@ -1277,6 +1280,7 @@ def api_song(song_id):
         image_url = url_for('static', filename='images/' + song['genre'] + ' ' + mood + '.jpg')
     if not image_url:
         image_url = default_cover_url()
+    conn.close()
     return jsonify({
         'id': song['id'],
         'title': song['title'],

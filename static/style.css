@@ -379,7 +379,7 @@ html {
     width: 100%;
     min-height: 260px;
     border-radius: 16px;
-    overflow: hidden;
+    overflow: visible;
     margin-bottom: 32px;
     display: flex;
     align-items: center;
@@ -395,6 +395,7 @@ html {
     background: url('/static/images/cover.jpg') center center / cover no-repeat;
     filter: saturate(0.85) brightness(0.7);
     opacity: 0.45;
+    border-radius: inherit;
 }
 
 .hero-overlay {
@@ -402,6 +403,7 @@ html {
     inset: 0;
     background: var(--hero-overlay);
     z-index: 1;
+    border-radius: inherit;
 }
 
 .hero-content {
@@ -1894,10 +1896,12 @@ html {
     background: var(--bg-elevated);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    z-index: 1000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
     display: none;
-    overflow: hidden;
+    max-height: 350px;
+    overflow-y: auto;
+    overflow-x: hidden;
     margin-top: 4px;
 }
 .search-suggestions.active {
@@ -1909,10 +1913,16 @@ html {
     gap: 10px;
     padding: 10px 14px;
     min-width: 0;
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
     text-decoration: none;
     color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
     transition: background var(--transition-fast);
-    border-bottom: 1px solid var(--border-subtle);
 }
 .sug-item:last-child {
     border-bottom: none;
@@ -1958,6 +1968,41 @@ html {
 }
 .search-section {
     position: relative;
+}
+
+/* ---------- Isolated Live Search View ---------- */
+/* While typing, hide every home section except the search bar and show only the
+   results grid. Clearing the input removes .search-mode and restores the page. */
+#home-content.search-mode > *:not(.hero-banner) {
+    display: none !important;
+}
+#home-content.search-mode .hero-content > *:not(.search-section) {
+    display: none !important;
+}
+#home-content.search-mode .hero-banner {
+    min-height: 0;
+    padding: 20px 0;
+    margin-bottom: 20px;
+}
+#home-content.search-mode .search-section {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.search-view {
+    margin-top: 8px;
+}
+.search-view-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.search-view .song-row-vertical .song-card {
+    min-height: 0;
 }
 
 /* ---------- Pagination ---------- */

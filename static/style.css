@@ -3979,7 +3979,15 @@ footer, .player-bar, .main-content, .sidebar, main {
    controls on exactly the same horizontal center. Restricted to small screens
    so desktop layout (3-column grid) is untouched. */
 @media (max-width: 768px) {
+    /* Mobile mini-player: hide the left thumbnail + song info so the playback
+       controls and timeline get the full bar width. Desktop is untouched. */
+    .persistent-player .player-left {
+        display: none !important;
+    }
+
     .persistent-player .player-center {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
         align-items: center !important;
     }
 
@@ -3998,6 +4006,12 @@ footer, .player-bar, .main-content, .sidebar, main {
         flex: 1 1 0 !important;
         min-width: 0 !important;
         max-width: 100% !important;
+    }
+
+    /* Clean right-side cluster: like/dislike/volume/expand stay flush right. */
+    .persistent-player .player-right {
+        flex: 0 0 auto !important;
+        justify-content: flex-end !important;
     }
 }
 

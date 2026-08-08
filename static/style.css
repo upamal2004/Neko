@@ -2949,16 +2949,36 @@ footer, .player-bar, .main-content, .sidebar, main {
     transition: height 0.3s ease, opacity 0.3s ease, padding 0.3s ease, min-height 0.3s ease;
 }
 
-/* Empty state â€” the bottom player bar is always visible on every route;
-   it only shows placeholder text until a song starts playing. */
+/* Empty state: no song selected yet — keep the bottom player bar completely
+   hidden. It only appears (slides in) once a track is loaded/played, which
+   removes the .idle class. */
 .persistent-player.idle {
-    height: 90px !important;
-    min-height: 90px !important;
-    max-height: 90px !important;
-    padding: 10px 20px !important;
-    opacity: 1;
-    pointer-events: auto;
-    overflow: visible;
+    display: none !important;
+}
+
+@keyframes playerBarIn {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.persistent-player:not(.idle) {
+    animation: playerBarIn 0.4s ease;
+}
+
+/* When the bar is hidden there is no footer to reserve space for: give the
+   fixed sidebar the full viewport height (desktop). */
+@media (min-width: 901px) {
+    .app-layout:has(footer.persistent-player.idle) .sidebar {
+        height: 100vh !important;
+    }
+}
+
+/* Mobile: reclaim the bottom padding that normally clears the fixed bar. */
+@media (max-width: 900px) {
+    body:has(footer.persistent-player.idle) .layout-main,
+    body:has(footer.persistent-player.idle) .player-page {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    }
 }
 
 #persistent-audio {
@@ -3136,6 +3156,7 @@ footer, .player-bar, .main-content, .sidebar, main {
 
 .track-slider {
     flex: 1;
+    min-width: 0;
     height: 4px;
     appearance: none;
     background: rgba(255, 255, 255, 0.12);
@@ -3950,6 +3971,33 @@ footer, .player-bar, .main-content, .sidebar, main {
         font-size: 20px !important;
         width: 22px !important;
         height: 22px !important;
+    }
+
+}
+
+/* Mobile timeline alignment: keep the seek bar and the center play/pause
+   controls on exactly the same horizontal center. Restricted to small screens
+   so desktop layout (3-column grid) is untouched. */
+@media (max-width: 768px) {
+    .persistent-player .player-center {
+        align-items: center !important;
+    }
+
+    .persistent-player .player-controls-buttons,
+    .persistent-player .playback-bar {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+    }
+
+    .persistent-player .player-controls-buttons {
+        justify-content: center !important;
+    }
+
+    .persistent-player .track-slider {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
     }
 }
 

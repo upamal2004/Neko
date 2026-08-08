@@ -97,7 +97,7 @@
         </div>
     </div>
 
-    <footer class="persistent-player" id="persistent-player">        <div class="player-left">
+    <footer class="persistent-player idle" id="persistent-player">        <div class="player-left">
             <div class="player-current-info" id="player-info" title="Now Playing">
                 <img id="now-playing-img" class="player-thumb" src="{{ url_for('static', filename='images/cover.jpg') }}" alt="Cover" onerror="this.onerror=null; this.src='/static/images/cover.jpg';" style="width: 48px; height: 48px; border-radius: 4px; object-fit: cover; margin-right: 12px; display: block;">
                 <div class="player-text-info">
@@ -265,6 +265,11 @@
             return;
         }
 
+        // Persist the exact playback position and playing state before navigating
+        // so a fallback full-page reload (or the player page itself) can resume
+        // seamlessly from where the audio currently is.
+        persistPlayerState();
+
         // Smart back navigation: remember the page we came from when opening the
         // player page so the bottom-right expand/collapse button can return to it.
         if (doPushState !== false && /^\/player\/\d+/.test(url) && !/^\/player\//.test(window.location.pathname)) {
@@ -303,6 +308,25 @@
             .catch(function() {
                 mainContent.classList.remove('page-transitioning');
                 if (window.__hideLoader) window.__hideLoader();
+                // If the HTML fetch fails, avoid a hard page reload that would
+                // destroy the persistent <audio> element and pause playback.
+                // For /player/<id> destinations, load the track through the JSON
+                // API and keep the current shell (and audio) alive instead.
+                var m = url.match(/^\/player\/(\d+)(?:\?.*)?$/);
+                if (m) {
+                    var plMatch = (url.match(/playlist_id=(\d+)/) || [])[1];
+                    var apiUrl = '/api/player/' + m[1] + (plMatch ? '?playlist_id=' + plMatch : '');
+                    fetch(apiUrl)
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            if (data && data.song) {
+                                playNextTrack(data.song, data.playlist_id);
+                                if (data.recommendations) syncPlayerPage(data);
+                            }
+                        })
+                        .catch(function() { window.location.href = url; });
+                    return;
+                }
                 window.location.href = url;
             });
     };
@@ -354,15 +378,23 @@
         try { delete song.play_requested; } catch (e) {}
         try { delete song.resume_time; } catch (e) {}
 
-        currentSong = song;
-
-        songTitle.textContent = song.title || 'Unknown';
-        songArtist.textContent = song.artist || '—';
-
         var src = song.file_path;
         if (!src || src.includes('undefined') || src.trim() === '' || src === '/') {
             src = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
         }
+
+        // Opening the full player page re-dispatches the song that is already
+        // playing in the mini-player. When it is the exact same file, keep the
+        // audio element untouched so playback never pauses, reloads or seeks back.
+        var sameSongPlaying = !!(currentSong && currentSong.id !== undefined &&
+            String(currentSong.id) === String(song.id) &&
+            audio.getAttribute('src') === src &&
+            !audio.paused);
+
+        currentSong = song;
+
+        songTitle.textContent = song.title || 'Unknown';
+        songArtist.textContent = song.artist || '—';
 
         thumb.style.display = 'block';
         var art = resolveImage(song);
@@ -374,17 +406,20 @@
             ? art
             : '{{ url_for('static', filename='images/cover.jpg') }}';
 
-        if (audio.getAttribute('src') !== src) {
-            audio.src = src;
-            audio.load();
-        }
-
         playerBar.classList.remove('idle');
         updatePlayBtn();
         updateExpandBtnState();
         persistPlayerState();
 
         fetchLikeStatus(song.id);
+
+        // Already playing this exact file — no audio changes needed.
+        if (sameSongPlaying) return;
+
+        if (audio.getAttribute('src') !== src) {
+            audio.src = src;
+            audio.load();
+        }
 
         // Auto-play only when explicitly requested (Play-button click or a queued
         // next track). A stale ?autoplay=true left in the URL after a reload must

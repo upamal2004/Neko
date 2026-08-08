@@ -11,6 +11,27 @@
                     document.documentElement.setAttribute('data-theme', t);
                 }
             } catch (e) {}
+            try {
+                var s = JSON.parse(localStorage.getItem('neko_settings') || 'null');
+                if (s && s.accent) {
+                    var ACCENTS = {
+                        green:  { a: '#1db954', h: '#1ed760', l: '#2ecc71', d: '#104e25', g: 'linear-gradient(135deg, #1ed760 0%, #1db954 100%)' },
+                        blue:   { a: '#00d2ff', h: '#3fddff', l: '#66e2ff', d: '#00577a', g: 'linear-gradient(135deg, #3fddff 0%, #0099ff 100%)' },
+                        purple: { a: '#a855f7', h: '#bd7bff', l: '#c084fc', d: '#581c87', g: 'linear-gradient(135deg, #c084fc 0%, #7c3aed 100%)' },
+                        red:    { a: '#ff6b5e', h: '#ff8a7d', l: '#ffb4ad', d: '#7f1d1d', g: 'linear-gradient(135deg, #ff9a6b 0%, #ff4f4f 100%)' }
+                    };
+                    var p = ACCENTS[s.accent];
+                    if (p) {
+                        var root = document.documentElement;
+                        root.style.setProperty('--accent-color', p.a);
+                        root.style.setProperty('--accent', p.a);
+                        root.style.setProperty('--accent-hover', p.h);
+                        root.style.setProperty('--accent-light', p.l);
+                        root.style.setProperty('--accent-dark', p.d);
+                        root.style.setProperty('--accent-gradient', p.g);
+                    }
+                }
+            } catch (e) {}
         })();
     </script>
     <title>{% block title %}Neko{% endblock %}</title>

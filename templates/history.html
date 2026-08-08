@@ -39,15 +39,25 @@
 </table>
 
 {% if total_pages > 1 %}
-<div class="pagination">
+<div class="pagination" aria-label="History pagination">
     {% if page > 1 %}
-    <a href="/history?page={{ page - 1 }}" class="pagination-link">&laquo; Prev</a>
+    <a href="/history{% if page - 1 > 1 %}?page={{ page - 1 }}{% endif %}" class="pagination-link" rel="prev">&laquo; Prev</a>
+    {% else %}
+    <span class="pagination-link pagination-link--disabled" aria-disabled="true">&laquo; Prev</span>
     {% endif %}
-    {% for p in range(1, total_pages + 1) %}
-    <a href="/history?page={{ p }}" class="pagination-link {% if p == page %}active{% endif %}">{{ p }}</a>
+
+    {% for p in pages %}
+        {% if p is none %}
+        <span class="pagination-ellipsis" aria-hidden="true">&hellip;</span>
+        {% else %}
+        <a href="/history{% if p > 1 %}?page={{ p }}{% endif %}" class="pagination-link {% if p == page %}active{% endif %}"{% if p == page %} aria-current="page"{% endif %}>{{ p }}</a>
+        {% endif %}
     {% endfor %}
+
     {% if page < total_pages %}
-    <a href="/history?page={{ page + 1 }}" class="pagination-link">Next &raquo;</a>
+    <a href="/history?page={{ page + 1 }}" class="pagination-link" rel="next">Next &raquo;</a>
+    {% else %}
+    <span class="pagination-link pagination-link--disabled" aria-disabled="true">Next &raquo;</span>
     {% endif %}
 </div>
 {% endif %}

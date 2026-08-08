@@ -16,47 +16,383 @@
 {% endif %}
 
 <div class="settings-grid">
-    <div class="settings-card">
-        <h3>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            Profile
-        </h3>
-        <p style="color:var(--text-secondary); font-size:0.82rem; margin-bottom:14px;">Update your display name</p>
-        <form action="/settings" method="POST" style="display:flex; gap:10px; align-items:flex-end;">
-            <input type="hidden" name="action" value="update_username">
-            <div style="flex:1;">
-                <label style="font-size:0.78rem; color:var(--text-muted); display:block; margin-bottom:4px;">Username</label>
-                <input type="text" name="username" value="{{ user['username'] }}" required class="settings-input">
+
+    <div class="settings-col">
+        <section class="settings-section settings-section--profile">
+            <h2 class="settings-section-title">Profile</h2>
+            <div class="settings-profile">
+                <form action="/settings/upload_avatar" method="POST" enctype="multipart/form-data" class="settings-profile-photo" id="avatar-form">
+                    {% if user['avatar'] %}
+                    <img src="{{ url_for('static', filename='uploads/avatars/' + user['avatar']) }}" alt="" class="settings-avatar-img">
+                    {% else %}
+                    <span class="settings-avatar-img settings-avatar-img--fallback">{{ user['username'][0]|upper }}</span>
+                    {% endif %}
+                    <label class="btn btn-secondary settings-upload-btn">
+                        Choose File
+                        <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp" class="settings-file-input" id="avatar-input">
+                    </label>
+                </form>
+                <form action="/settings" method="POST" class="settings-profile-form" id="profile-form">
+                    <input type="hidden" name="action" value="update_username">
+                    <input type="text" id="settings-username" name="username" value="{{ user['username'] }}" required class="settings-input" aria-label="Display name">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
             </div>
-            <button type="submit" class="btn btn-primary">Save</button>
-        </form>
+        </section>
+
+        <section class="settings-section">
+            <h2 class="settings-section-title">Playback</h2>
+            <div class="settings-row">
+                <div class="settings-label">
+                    <span>Streaming Quality</span>
+                    <small>Stream at a lower bitrate to save data</small>
+                </div>
+                <div class="settings-control">
+                    <select id="setting-quality" class="settings-select" aria-label="Streaming quality">
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High 320kbps</option>
+                    </select>
+                </div>
+            </div>
+            <div class="settings-row">
+                <div class="settings-label">
+                    <span>Autoplay Similar Songs</span>
+                    <small>Automatically play similar tracks when one ends</small>
+                </div>
+                <div class="settings-control">
+                    <label class="settings-toggle">
+                        <input type="checkbox" id="setting-autoplay" checked aria-label="Autoplay similar songs">
+                        <span class="settings-toggle-track"><span class="settings-toggle-thumb"></span></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section">
+            <h2 class="settings-section-title">Appearance</h2>
+            <div class="settings-row">
+                <div class="settings-label">
+                    <span>Theme Accent Color</span>
+                    <small>Customize the app's primary accent color</small>
+                </div>
+                <div class="settings-control">
+                    <div class="accent-pills" id="accent-pills">
+                        <button type="button" class="accent-pill" data-accent="green" title="Spotify Green">
+                            <span class="accent-swatch" style="--swatch:#1db954;"></span>
+                            <span class="accent-name">Spotify Green</span>
+                        </button>
+                        <button type="button" class="accent-pill" data-accent="blue" title="Cyber Neon Blue">
+                            <span class="accent-swatch" style="--swatch:#00d2ff;"></span>
+                            <span class="accent-name">Cyber Neon Blue</span>
+                        </button>
+                        <button type="button" class="accent-pill" data-accent="purple" title="Electric Purple">
+                            <span class="accent-swatch" style="--swatch:#a855f7;"></span>
+                            <span class="accent-name">Electric Purple</span>
+                        </button>
+                        <button type="button" class="accent-pill" data-accent="red" title="Sunset Red">
+                            <span class="accent-swatch" style="--swatch:#ff6b5e;"></span>
+                            <span class="accent-name">Sunset Red</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <div class="settings-card">
-        <h3>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            Change Password
-        </h3>
-        <p style="color:var(--text-secondary); font-size:0.82rem; margin-bottom:14px;">Set a new password for your account</p>
-        <form action="/settings" method="POST" style="display:flex; flex-direction:column; gap:10px;">
-            <input type="hidden" name="action" value="change_password">
-            <input type="password" name="current_password" placeholder="Current password" required class="settings-input">
-            <input type="password" name="new_password" placeholder="New password" required class="settings-input">
-            <input type="password" name="confirm_password" placeholder="Confirm new password" required class="settings-input">
-            <button type="submit" class="btn btn-primary" style="align-self:flex-start;">Change Password</button>
-        </form>
+    <div class="settings-col">
+        <section class="settings-section">
+            <h2 class="settings-section-title">Security</h2>
+            <form action="/settings" method="POST" id="password-form">
+                <input type="hidden" name="action" value="change_password">
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>Current Password</span>
+                    </div>
+                    <div class="settings-control">
+                        <input type="password" name="current_password" required class="settings-input" placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>New Password</span>
+                    </div>
+                    <div class="settings-control">
+                        <input type="password" name="new_password" required class="settings-input" placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>Confirm New Password</span>
+                    </div>
+                    <div class="settings-control">
+                        <input type="password" name="confirm_password" required class="settings-input" placeholder="••••••••">
+                    </div>
+                </div>
+                <div class="settings-row">
+                    <div class="settings-label"></div>
+                    <div class="settings-control">
+                        <button type="submit" class="btn btn-primary">Change Password</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="settings-section">
+            <h2 class="settings-section-title">Privacy</h2>
+            <div class="settings-row">
+                <div class="settings-label">
+                    <span>Clear Listening History &amp; Cache</span>
+                    <small>Delete your listening history and cached playback data</small>
+                </div>
+                <div class="settings-control">
+                    <button type="button" class="btn btn-danger" id="clear-data-btn">Clear</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="settings-section settings-section--danger">
+            <h2 class="settings-section-title">Danger Zone</h2>
+            <form action="/settings" method="POST" id="delete-account-form">
+                <input type="hidden" name="action" value="delete_account">
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <span>Delete Account</span>
+                        <small>Permanently delete your account and all data. This cannot be undone.</small>
+                    </div>
+                    <div class="settings-control">
+                        <button type="submit" class="btn btn-danger">Delete My Account</button>
+                    </div>
+                </div>
+            </form>
+        </section>
     </div>
 
-    <div class="settings-card settings-card--danger">
-        <h3 style="color:var(--accent-red);">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-            Delete Account
-        </h3>
-        <p style="color:var(--text-muted); font-size:0.82rem; margin-bottom:14px;">Permanently delete your account and all data. This cannot be undone.</p>
-        <form action="/settings" method="POST" onsubmit="return confirm('Are you sure you want to delete your account? All your playlists, history, and likes will be permanently lost.');">
-            <input type="hidden" name="action" value="delete_account">
-            <button type="submit" class="btn btn-danger">Delete My Account</button>
-        </form>
+</div>
+
+<div class="modal-backdrop" id="clear-data-modal" aria-hidden="true">
+    <div class="modal-card">
+        <h3>Clear listening history &amp; cached data?</h3>
+        <p>Are you sure you want to clear your listening history and cached data? This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="clear-data-cancel">Cancel</button>
+            <button type="button" class="btn btn-danger" id="clear-data-confirm">Clear</button>
+        </div>
     </div>
 </div>
+
+<div class="modal-backdrop" id="confirm-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <h3 id="confirm-modal-title">Are you sure?</h3>
+        <p id="confirm-modal-message"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="confirm-cancel">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirm-ok">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var LS_KEY = 'neko_settings';
+    var DEFAULTS = { quality: 'normal', autoplay: true, accent: 'green' };
+    var ACCENTS = {
+        green:  { accent: '#1db954', hover: '#1ed760', light: '#2ecc71', dark: '#104e25', gradient: 'linear-gradient(135deg, #1ed760 0%, #1db954 100%)' },
+        blue:   { accent: '#00d2ff', hover: '#3fddff', light: '#66e2ff', dark: '#00577a', gradient: 'linear-gradient(135deg, #3fddff 0%, #0099ff 100%)' },
+        purple: { accent: '#a855f7', hover: '#bd7bff', light: '#c084fc', dark: '#581c87', gradient: 'linear-gradient(135deg, #c084fc 0%, #7c3aed 100%)' },
+        red:    { accent: '#ff6b5e', hover: '#ff8a7d', light: '#ffb4ad', dark: '#7f1d1d', gradient: 'linear-gradient(135deg, #ff9a6b 0%, #ff4f4f 100%)' }
+    };
+
+    function load() {
+        var s = {};
+        try { s = JSON.parse(localStorage.getItem(LS_KEY) || 'null') || {}; } catch (e) {}
+        for (var k in DEFAULTS) { if (s[k] === undefined) s[k] = DEFAULTS[k]; }
+        return s;
+    }
+    function save(s) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+    }
+
+    var settings = load();
+
+    function applyAccent(key) {
+        var p = ACCENTS[key] || ACCENTS.green;
+        var root = document.documentElement;
+        root.style.setProperty('--accent-color', p.accent);
+        root.style.setProperty('--accent', p.accent);
+        root.style.setProperty('--accent-hover', p.hover);
+        root.style.setProperty('--accent-light', p.light);
+        root.style.setProperty('--accent-dark', p.dark);
+        root.style.setProperty('--accent-gradient', p.gradient);
+    }
+
+    // ----- Profile photo upload -----
+    var avatarInput = document.getElementById('avatar-input');
+    var avatarForm = document.getElementById('avatar-form');
+    if (avatarInput && avatarForm) {
+        avatarInput.addEventListener('change', function() {
+            if (this.files && this.files.length) avatarForm.submit();
+        });
+    }
+
+    // ----- Generic confirmation modal -----
+    var confirmModal = document.getElementById('confirm-modal');
+    var confirmTitle = document.getElementById('confirm-modal-title');
+    var confirmMessage = document.getElementById('confirm-modal-message');
+    var confirmOk = document.getElementById('confirm-ok');
+    var confirmCancel = document.getElementById('confirm-cancel');
+    var pendingConfirm = null;
+
+    function openConfirm(opts) {
+        confirmTitle.textContent = opts.title || 'Are you sure?';
+        confirmMessage.textContent = opts.message || '';
+        confirmOk.textContent = opts.confirmText || 'Confirm';
+        confirmOk.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+        pendingConfirm = opts.onConfirm || null;
+        confirmModal.classList.toggle('modal-backdrop--danger', !!opts.danger);
+        confirmModal.classList.add('show');
+        confirmModal.setAttribute('aria-hidden', 'false');
+    }
+    function closeConfirm() {
+        confirmModal.classList.remove('show');
+        confirmModal.setAttribute('aria-hidden', 'true');
+        pendingConfirm = null;
+    }
+    confirmOk.addEventListener('click', function() {
+        var fn = pendingConfirm;
+        closeConfirm();
+        if (fn) fn();
+    });
+    confirmCancel.addEventListener('click', closeConfirm);
+    confirmModal.addEventListener('click', function(e) {
+        if (e.target === confirmModal) closeConfirm();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && confirmModal.classList.contains('show')) closeConfirm();
+    });
+
+    // ----- Sensitive action confirmations -----
+    var profileForm = document.getElementById('profile-form');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            openConfirm({
+                title: 'Save changes?',
+                message: 'Are you sure you want to save these profile/password changes?',
+                confirmText: 'Save',
+                onConfirm: function() { profileForm.submit(); }
+            });
+        });
+    }
+
+    var passwordForm = document.getElementById('password-form');
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            openConfirm({
+                title: 'Change password?',
+                message: 'Are you sure you want to save these profile/password changes?',
+                confirmText: 'Change Password',
+                onConfirm: function() { passwordForm.submit(); }
+            });
+        });
+    }
+
+    var deleteForm = document.getElementById('delete-account-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            openConfirm({
+                title: 'Delete Account',
+                message: 'Are you sure you want to permanently delete your account? This action CANNOT be undone.',
+                confirmText: 'Delete My Account',
+                danger: true,
+                onConfirm: function() { deleteForm.submit(); }
+            });
+        });
+    }
+
+    // ----- Streaming quality -----
+    var quality = document.getElementById('setting-quality');
+    quality.value = settings.quality;
+    quality.addEventListener('change', function() {
+        settings.quality = this.value;
+        save(settings);
+    });
+
+    // ----- Autoplay toggle -----
+    var autoplay = document.getElementById('setting-autoplay');
+    autoplay.checked = !!settings.autoplay;
+    autoplay.addEventListener('change', function() {
+        settings.autoplay = this.checked;
+        save(settings);
+    });
+
+    // ----- Accent color pills -----
+    var pills = document.querySelectorAll('.accent-pill');
+    function highlightAccent(key) {
+        pills.forEach(function(pill) {
+            pill.classList.toggle('active', pill.getAttribute('data-accent') === key);
+        });
+    }
+    highlightAccent(settings.accent);
+    applyAccent(settings.accent);
+    pills.forEach(function(pill) {
+        pill.addEventListener('click', function() {
+            var key = this.getAttribute('data-accent');
+            settings.accent = key;
+            save(settings);
+            highlightAccent(key);
+            applyAccent(key);
+        });
+    });
+
+    // ----- Clear listening history & cache -----
+    var clearBtn = document.getElementById('clear-data-btn');
+    var clearModal = document.getElementById('clear-data-modal');
+    var clearCancel = document.getElementById('clear-data-cancel');
+    var clearConfirm = document.getElementById('clear-data-confirm');
+    var rowLabel = clearBtn.closest('.settings-row').querySelector('small');
+
+    function openClearModal() {
+        clearModal.classList.add('show');
+        clearModal.setAttribute('aria-hidden', 'false');
+    }
+    function closeClearModal() {
+        clearModal.classList.remove('show');
+        clearModal.setAttribute('aria-hidden', 'true');
+    }
+    function showMsg(text) {
+        var original = rowLabel.textContent;
+        rowLabel.textContent = text;
+        rowLabel.style.color = 'var(--accent)';
+        setTimeout(function() {
+            rowLabel.textContent = original;
+            rowLabel.style.color = '';
+        }, 3500);
+    }
+
+    clearBtn.addEventListener('click', openClearModal);
+    clearCancel.addEventListener('click', closeClearModal);
+    clearModal.addEventListener('click', function(e) {
+        if (e.target === clearModal) closeClearModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && clearModal.classList.contains('show')) closeClearModal();
+    });
+
+    clearConfirm.addEventListener('click', function() {
+        fetch('/clear_history', { method: 'POST' })
+            .then(function() {
+                try { localStorage.removeItem('neko_player_state'); } catch (e) {}
+                closeClearModal();
+                showMsg('Listening history and cache cleared');
+            })
+            .catch(function() {
+                closeClearModal();
+                showMsg('Could not clear history. Please try again.');
+            });
+    });
+})();
+</script>
 {% endblock %}

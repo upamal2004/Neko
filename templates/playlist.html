@@ -48,7 +48,7 @@
                 <h2 style="margin:0; font-size:1.5rem;">{{ active_playlist['name'] }}</h2>
                 <p style="color:var(--text-secondary); font-size:0.85rem; margin:4px 0 0 0;" class="playlist-subtitle-count">{{ songs|length }} song{% if songs|length != 1 %}s{% endif %}</p>
             </div>
-            <form action="/delete_playlist/{{ active_playlist['id'] }}" method="POST" onsubmit="return confirm('Delete this playlist?')">
+            <form action="/delete_playlist/{{ active_playlist['id'] }}" method="POST" id="delete-playlist-form">
                 <button type="submit" class="btn" style="background:transparent; color:var(--accent-red); border:1px solid var(--border-subtle); padding:6px 14px; font-size:0.8rem;">Delete</button>
             </form>
         </div>
@@ -129,6 +129,17 @@
 </div>
 {% endif %}
 
+<div class="modal-backdrop" id="delete-playlist-modal" aria-hidden="true">
+    <div class="modal-card">
+        <h3>Delete Playlist?</h3>
+        <p>Are you sure you want to delete this playlist? This action cannot be undone.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="delete-playlist-cancel">Cancel</button>
+            <button type="button" class="btn btn-danger" id="delete-playlist-confirm">Delete</button>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     var toggleBtn = document.getElementById('toggle-playlist-form-btn');
@@ -144,6 +155,39 @@
 </script>
 
 {% if active_playlist %}
+<script>
+(function() {
+    var delForm = document.getElementById('delete-playlist-form');
+    var delModal = document.getElementById('delete-playlist-modal');
+    if (!delForm || !delModal) return;
+    var delCancel = document.getElementById('delete-playlist-cancel');
+    var delConfirm = document.getElementById('delete-playlist-confirm');
+
+    function openDelModal() {
+        delModal.classList.add('show');
+        delModal.setAttribute('aria-hidden', 'false');
+    }
+    function closeDelModal() {
+        delModal.classList.remove('show');
+        delModal.setAttribute('aria-hidden', 'true');
+    }
+
+    delForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        openDelModal();
+    });
+    delCancel.addEventListener('click', closeDelModal);
+    delModal.addEventListener('click', function(e) {
+        if (e.target === delModal) closeDelModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && delModal.classList.contains('show')) closeDelModal();
+    });
+    delConfirm.addEventListener('click', function() {
+        delForm.submit();
+    });
+})();
+</script>
 <script>
 (function() {
     document.querySelectorAll('.playlist-page .playlist-add-btn[data-playlist-id]').forEach(function(btn) {

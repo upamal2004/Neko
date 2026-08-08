@@ -54,7 +54,51 @@
     </div>
 </div>
 
-{% if not is_filtered %}
+{% if artist_filter %}
+
+<div class="artist-filter-bar">
+    <span>Showing songs by <strong>{{ artist_filter }}</strong></span>
+    <a href="/" class="btn btn-primary" style="font-size:0.8rem; padding:6px 14px;">Show All Songs</a>
+</div>
+
+<hr class="section-divider">
+<div style="display:flex; align-items:center; gap:12px; margin-bottom:6px;">
+    <h2 style="font-size:1.4rem; font-weight:700; margin:0;">Songs by {{ artist_filter }}</h2>
+</div>
+
+<div class="song-row song-row-vertical">
+    {% for song in artist_songs %}
+    <div class="song-card">
+        <div class="song-cover">
+            {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
+            <div class="play-overlay">
+                <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </button>
+            </div>
+        </div>
+        <div class="song-info">
+            <a href="/player/{{ song['id'] }}" class="song-title" >{{ song['title'] }}</a>
+            <span class="song-artist">{{ song['artist'] }}</span>
+            <span class="song-genre">{{ song['genre'] }}</span>
+        </div>
+        <div class="song-card-actions">
+            <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
+                <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            </button>
+            {% if song.is_in_playlist %}<button class="playlist-add-btn add-to-playlist-btn added" data-song-id="{{ song['id'] }}" title="In playlist">✓</button>{% else %}<button class="playlist-add-btn add-to-playlist-btn" data-song-id="{{ song['id'] }}" title="Add to playlist">+</button>{% endif %}
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No songs found for {{ artist_filter }}.</p>
+        <a href="/">Browse all songs</a>
+    </div>
+    {% endfor %}
+</div>
+
+{% elif not is_filtered %}
 
 {% if time_songs %}
 <hr class="section-divider">
@@ -65,11 +109,7 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['image_url'] %}
-                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="cover-fallback">♪</div>
-            {% endif %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
                 <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -101,11 +141,7 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['image_url'] %}
-                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="cover-fallback">♪</div>
-            {% endif %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
                 <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -141,11 +177,7 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['image_url'] %}
-                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="cover-fallback">♪</div>
-            {% endif %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
                 <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -180,11 +212,7 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['image_url'] %}
-                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="cover-fallback">♪</div>
-            {% endif %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
                 <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -216,8 +244,8 @@
 
 <div class="song-row">
     {% for artist in recommended_artists %}
-    <a href="/search?query={{ artist['artist'] | urlencode }}" class="artist-card">
-        <div class="artist-avatar-circle" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 10px auto; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1db954, #191414); color: #ffffff; font-size: 24px; font-weight: 700; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.4); border: 2px solid #282828;">
+    <a href="/artist?name={{ artist['artist'] | urlencode }}" class="artist-card" data-artist="{{ artist['artist'] }}">
+        <div class="artist-circle-avatar" style="background: radial-gradient(circle at 35% 35%, var(--accent-color, #1db954), #121212) !important; width: 70px; height: 70px; margin: 0 auto 10px auto; color: #ffffff; font-size: 24px; font-weight: 700; text-transform: uppercase; border: 2px solid #282828;">
             {{ artist['artist'][0] }}
         </div>
         <span class="artist-name">{{ artist['artist'] }}</span>
@@ -242,11 +270,7 @@
     <div class="song-card">
         <div class="song-cover">
             {% set mood = 'happy' if song['energy'] >= 0.5 else 'relax' %}
-            {% if song['image_url'] %}
-                <img src="{{ song['image_url'] }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
-            {% else %}
-                <div class="cover-fallback">♪</div>
-            {% endif %}
+            <img src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['genre'] }}" class="cover-img" onerror="this.onerror=null; this.src='/static/images/cover.jpg'">
             <div class="play-overlay">
                 <button class="btn-play" onclick="navigateTo('/player/{{ song['id'] }}?autoplay=true')">
                     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>

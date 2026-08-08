@@ -169,10 +169,10 @@
     <canvas id="likeDislikeChart" style="max-height:280px;"></canvas>
     <div style="display:flex; gap:16px; flex-wrap:wrap; margin-top:18px; justify-content:center;">
         {% for s in like_songs %}
-        <span style="background:rgba(0,255,102,0.1); border:1px solid rgba(0,255,102,0.25); color:#00ff66; padding:4px 14px; border-radius:20px; font-size:0.78rem; white-space:nowrap;">{{ s['title'] }}</span>
+        <span style="background:rgba(29,185,84,0.1); border:1px solid rgba(29,185,84,0.25); color:#1db954; padding:4px 14px; border-radius:20px; font-size:0.78rem; white-space:nowrap;">{{ s['title'] }}</span>
         {% endfor %}
         {% for s in dislike_songs %}
-        <span style="background:rgba(255,51,68,0.1); border:1px solid rgba(255,51,68,0.25); color:#ff3344; padding:4px 14px; border-radius:20px; font-size:0.78rem; white-space:nowrap;">{{ s['title'] }}</span>
+        <span style="background:rgba(255,77,77,0.1); border:1px solid rgba(255,77,77,0.25); color:#ff4d4d; padding:4px 14px; border-radius:20px; font-size:0.78rem; white-space:nowrap;">{{ s['title'] }}</span>
         {% endfor %}
     </div>
     {% else %}
@@ -183,6 +183,19 @@
 var colors = ['#1DB954', '#128C7E', '#3498db', '#9b59b6', '#e67e22', '#e74c3c', '#f1c40f'];
 var textColor = '#b3b3b3';
 var gridColor = 'rgba(255,255,255,0.06)';
+
+function getAccentColor() {
+    var v = (getComputedStyle(document.documentElement).getPropertyValue('--accent-color') || '').trim();
+    return v || '#1db954';
+}
+function accentRgba(alpha) {
+    var c = getAccentColor().replace('#', '');
+    var r = parseInt(c.substring(0, 2), 16);
+    var g = parseInt(c.substring(2, 4), 16);
+    var b = parseInt(c.substring(4, 6), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return 'rgba(29,185,84,' + alpha + ')';
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
 
 function fetchAndRefreshCharts() {
     if (typeof Chart === 'undefined') return;
@@ -209,7 +222,7 @@ function fetchAndRefreshCharts() {
             if (tc && d.trend) {
                 window.myTrendChart = new Chart(tc, {
                     type: 'line',
-                    data: { labels: d.trend.labels, datasets: [{ label: 'Songs Played', data: d.trend.data, borderColor: '#1DB954', backgroundColor: 'rgba(29,185,84,0.08)', fill: true, tension: 0.35, pointBackgroundColor: '#1DB954', pointBorderColor: '#121212', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6 }] },
+                    data: { labels: d.trend.labels, datasets: [{ label: 'Songs Played', data: d.trend.data, borderColor: getAccentColor(), backgroundColor: accentRgba(0.08), fill: true, tension: 0.35, pointBackgroundColor: getAccentColor(), pointBorderColor: '#121212', pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6 }] },
                     options: { responsive: true, scales: { x: { ticks: { color: textColor, font: { family: 'Inter', size: 11 } }, grid: { color: gridColor } }, y: { beginAtZero: true, ticks: { color: textColor, font: { family: 'Inter', size: 11 }, stepSize: 1 }, grid: { color: gridColor } } }, plugins: { legend: { display: false } } }
                 });
             }
@@ -220,7 +233,7 @@ function fetchAndRefreshCharts() {
             if (cc && d.correlation) {
                 window.myCorrChart = new Chart(cc, {
                     type: 'bar',
-                    data: { labels: d.correlation.genres, datasets: [{ label: 'Happy / High Energy', data: d.correlation.happy, backgroundColor: '#1DB954', borderRadius: 0 }, { label: 'Chill / Relax', data: d.correlation.chill, backgroundColor: '#3498db', borderRadius: 0 }] },
+                    data: { labels: d.correlation.genres, datasets: [{ label: 'Happy / High Energy', data: d.correlation.happy, backgroundColor: '#1db954', borderRadius: 0 }, { label: 'Chill / Relax', data: d.correlation.chill, backgroundColor: '#3498db', borderRadius: 0 }] },
                     options: { responsive: true, scales: { x: { stacked: true, ticks: { color: textColor, font: { family: 'Inter', size: 11 } }, grid: { display: false } }, y: { stacked: true, beginAtZero: true, ticks: { color: textColor, font: { family: 'Inter', size: 11 }, stepSize: 1 }, grid: { color: gridColor } } }, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 16, font: { family: 'Inter', size: 12 }, usePointStyle: true } } } }
                 });
             }
@@ -231,7 +244,7 @@ function fetchAndRefreshCharts() {
             if (dc && d.daily) {
                 window.myDailyChart = new Chart(dc, {
                     type: 'line',
-                    data: { labels: d.daily.dates, datasets: [{ label: 'Avg Mood Score', data: d.daily.energies, borderColor: '#1DB954', backgroundColor: 'rgba(29,185,84,0.1)', fill: true, tension: 0.35, pointBackgroundColor: '#1DB954', pointBorderColor: '#121212', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 8, yAxisID: 'y' }] },
+                    data: { labels: d.daily.dates, datasets: [{ label: 'Avg Mood Score', data: d.daily.energies, borderColor: getAccentColor(), backgroundColor: accentRgba(0.1), fill: true, tension: 0.35, pointBackgroundColor: getAccentColor(), pointBorderColor: '#121212', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 8, yAxisID: 'y' }] },
                     options: { responsive: true, interaction: { mode: 'index', intersect: false }, scales: { x: { ticks: { color: textColor, font: { family: 'Inter', size: 11 } }, grid: { color: gridColor } }, y: { beginAtZero: true, max: 1, ticks: { color: textColor, font: { family: 'Inter', size: 11 }, callback: function(v) { return (v * 100).toFixed(0) + '%'; } }, grid: { color: gridColor } } }, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 16, font: { family: 'Inter', size: 12 }, usePointStyle: true } }, tooltip: { backgroundColor: '#1A1A1A', titleColor: '#fff', bodyColor: '#b3b3b3', borderColor: '#2a2a2a', borderWidth: 1, padding: 12, cornerRadius: 8, callbacks: { afterBody: function(ti) { var g = d.daily.genres; return g && g[ti[0].dataIndex] ? 'Top Genre: ' + g[ti[0].dataIndex] : ''; } } } } }
                 });
             }
@@ -242,7 +255,7 @@ function fetchAndRefreshCharts() {
             if (ldc && d.likeDislike) {
                 window.myLikeDislikeChart = new Chart(ldc, {
                     type: 'bar',
-                    data: { labels: d.likeDislike.genres, datasets: [{ label: 'Likes', data: d.likeDislike.likes, backgroundColor: '#00ff66', borderRadius: 4 }, { label: 'Dislikes', data: d.likeDislike.dislikes, backgroundColor: '#ff3344', borderRadius: 4 }] },
+                    data: { labels: d.likeDislike.genres, datasets: [{ label: 'Likes', data: d.likeDislike.likes, backgroundColor: '#1db954', borderRadius: 4 }, { label: 'Dislikes', data: d.likeDislike.dislikes, backgroundColor: '#ff4d4d', borderRadius: 4 }] },
                     options: { indexAxis: 'y', responsive: true, scales: { x: { stacked: true, ticks: { color: textColor, font: { family: 'Inter', size: 11 }, stepSize: 1 }, grid: { color: gridColor } }, y: { stacked: true, ticks: { color: textColor, font: { family: 'Inter', size: 11 } }, grid: { display: false } } }, plugins: { legend: { position: 'bottom', labels: { color: textColor, padding: 16, font: { family: 'Inter', size: 12 }, usePointStyle: true } } } }
                 });
             }

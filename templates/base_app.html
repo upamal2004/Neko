@@ -28,6 +28,14 @@
 })();
 </script>
 
+<div class="app-loader" id="app-loader" aria-hidden="true">
+    <div class="app-loader-inner">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Neko" class="app-loader-logo">
+        <div class="app-loader-spinner"></div>
+        <p class="app-loader-text">Loading...</p>
+    </div>
+</div>
+
 <div class="app-layout">
     <div class="layout-main">
         <aside class="sidebar">
@@ -38,7 +46,11 @@
             </div>
 
             <div class="user-badge">
+                {% if user_avatar %}
+                <div class="avatar" style="background-image:url('{{ url_for('static', filename='uploads/avatars/' + user_avatar) }}'); background-size:cover; background-position:center; color:transparent;"></div>
+                {% else %}
                 <div class="avatar">{{ session['username'][0]|upper }}</div>
+                {% endif %}
                 <span class="username">{{ session['username'] }}</span>
             </div>
 
@@ -85,10 +97,9 @@
         </div>
     </div>
 
-    <footer class="persistent-player" id="persistent-player">
-        <div class="player-left">
+    <footer class="persistent-player" id="persistent-player">        <div class="player-left">
             <div class="player-current-info" id="player-info" title="Now Playing">
-                <img id="player-thumb" class="player-thumb" src="{{ url_for('static', filename='images/default_cover.png') }}" onerror="this.style.display='none';" alt="Album Art">
+                <img id="now-playing-img" class="player-thumb" src="{{ url_for('static', filename='images/cover.jpg') }}" alt="Cover" onerror="this.onerror=null; this.src='/static/images/cover.jpg';" style="width: 48px; height: 48px; border-radius: 4px; object-fit: cover; margin-right: 12px; display: block;">
                 <div class="player-text-info">
                     <span id="player-song-title" class="player-song-title">No song playing</span>
                     <span id="player-song-artist" class="player-song-artist">—</span>
@@ -142,6 +153,17 @@
     </footer>
 </div>
 
+<div class="modal-backdrop" id="logout-modal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title">
+        <h3 id="logout-modal-title">Log out?</h3>
+        <p>Are you sure you want to log out?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="logout-cancel">Cancel</button>
+            <button type="button" class="btn btn-danger" id="logout-confirm">Log Out</button>
+        </div>
+    </div>
+</div>
+
 {% block bottom_player %}{% endblock %}
 
 <script>
@@ -187,7 +209,7 @@
     var volumeSlider = document.getElementById('player-volume');
     var volumeBtn = document.getElementById('player-volume-btn');
     volumeSlider.style.setProperty('--vol-progress', (volumeSlider.value * 100) + '%');
-    var thumb = document.getElementById('player-thumb');
+    var thumb = document.getElementById('now-playing-img');
     var songTitle = document.getElementById('player-song-title');
     var songArtist = document.getElementById('player-song-artist');
     var playerBar = document.getElementById('persistent-player');
@@ -199,10 +221,39 @@
     var ICON_COLLAPSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 3 3 3 3 9"/><polyline points="15 21 21 21 21 15"/><line x1="3" y1="9" x2="10" y2="16"/><line x1="21" y1="15" x2="14" y2="8"/></svg>';
 
     var currentSong = null;
+    var lastPlayedSongId = null;
+
+    function scrollMainToTop() {
+        var els = [window, document.scrollingElement || document.documentElement];
+        document.querySelectorAll('.layout-main, .main-content, .player-page-container').forEach(function(el) {
+            els.push(el);
+        });
+        for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            if (!el) continue;
+            try {
+                if (el.scrollTo) {
+                    el.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    el.scrollTop = 0;
+                }
+            } catch (e) {
+                try { el.scrollTop = 0; } catch (e2) {}
+            }
+        }
+    }
 
     function resolveImage(song) {
         if (!song) return '';
         return (song.image_url || song.cover_image || song.artwork_url) || '';
+    }
+
+    // ===== SETTINGS-DRIVEN PLAYBACK HELPERS =====
+    function getSetting(key, def) {
+        try {
+            var s = JSON.parse(localStorage.getItem('neko_settings') || '{}');
+            return s[key] !== undefined ? s[key] : def;
+        } catch (e) { return def; }
     }
 
     // ===== SPA NAVIGATION =====
@@ -224,6 +275,7 @@
 
         var mainContent = document.querySelector('.main-content');
         mainContent.classList.add('page-transitioning');
+        if (window.__showLoader) window.__showLoader();
 
         fetch(url)
             .then(function(res) { return res.text(); })
@@ -243,11 +295,14 @@
                     if (typeof window._onContentSwapped === 'function') {
                         window._onContentSwapped();
                     }
-                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    scrollMainToTop();
                 }
                 mainContent.classList.remove('page-transitioning');
+                if (window.__hideLoader) window.__hideLoader();
             })
             .catch(function() {
+                mainContent.classList.remove('page-transitioning');
+                if (window.__hideLoader) window.__hideLoader();
                 window.location.href = url;
             });
     };
@@ -310,12 +365,14 @@
         }
 
         thumb.style.display = 'block';
-        var resolvedThumb = resolveImage(song);
-        if (resolvedThumb) {
-            thumb.src = resolvedThumb;
-        } else {
-            thumb.src = '{{ url_for('static', filename='images/default_cover.png') }}';
-        }
+        var art = resolveImage(song);
+        thumb.onerror = function() {
+            this.onerror = null;
+            this.src = '{{ url_for('static', filename='images/cover.jpg') }}';
+        };
+        thumb.src = (art && art.trim() !== '' && art !== 'None')
+            ? art
+            : '{{ url_for('static', filename='images/cover.jpg') }}';
 
         if (audio.getAttribute('src') !== src) {
             audio.src = src;
@@ -329,8 +386,10 @@
 
         fetchLikeStatus(song.id);
 
-        // Auto-play when arriving via a Play button, or resume a persisted track
-        if (playRequested || /[?&]autoplay=true/.test(window.location.search)) {
+        // Auto-play only when explicitly requested (Play-button click or a queued
+        // next track). A stale ?autoplay=true left in the URL after a reload must
+        // NOT override a saved paused state — loadSong never plays from the URL.
+        if (playRequested) {
             var doAutoPlay = function() {
                 if (resumeTime > 0 && isFinite(resumeTime)) {
                     try { audio.currentTime = resumeTime; } catch (e) {}
@@ -375,7 +434,7 @@
     playBtn.addEventListener('touchstart', handlePlayClick, { passive: false });
 
     nextBtn.addEventListener('click', function() {
-        goToNextTrack();
+        goToNextTrack(true);
     });
 
     prevBtn.addEventListener('click', function() {
@@ -389,6 +448,11 @@
         playerBar.classList.add('is-playing');
         document.body.classList.add('is-playing');
         persistPlayerState();
+        // Scroll to the top when a new song starts playing
+        if (currentSong && currentSong.id && currentSong.id !== lastPlayedSongId) {
+            lastPlayedSongId = currentSong.id;
+            scrollMainToTop();
+        }
         // Record history on every play
         if (currentSong && currentSong.id) {
             fetch('/add_to_history', {
@@ -513,7 +577,18 @@
     });
 
     // ===== UP NEXT / QUEUE =====
-    function goToNextTrack() {
+    // Auto-advance never navigates the page. The next track is fetched in the
+    // background and played straight in the persistent player; the UI (mini-player
+    // bar, and the full player page when it is on screen) is synced in place.
+    // `force` is true for a manual Next-button click (always skips); the autoplay
+    // setting only gates the automatic advance triggered by a track ending.
+    function goToNextTrack(force) {
+        if (!force && !getSetting('autoplay', true)) return;
+
+        var plId = (currentSong && currentSong.playlist_id) || null;
+
+        // On the player page the rec-list is the live Up Next queue — advance
+        // through it (wrapping around) without navigating.
         var recs = document.querySelectorAll('.rec-list .rec-item');
         if (recs.length > 0 && currentSong && currentSong.id) {
             for (var i = 0; i < recs.length; i++) {
@@ -521,35 +596,151 @@
                 if (cur && parseInt(cur[1], 10) === currentSong.id) {
                     var next = recs[i + 1] || recs[0];
                     if (next) {
-                        navigateTo(next.getAttribute('href'));
+                        var nextMatch = next.getAttribute('href').match(/^\/player\/(\d+)/);
+                        if (nextMatch) {
+                            advanceToSong(parseInt(nextMatch[1], 10), plId);
+                        }
+                        return;
                     }
-                    return;
                 }
             }
             // Current song not found in the queue — wrap to first
-            navigateTo(recs[0].getAttribute('href'));
+            var firstMatch = recs[0].getAttribute('href').match(/^\/player\/(\d+)/);
+            if (firstMatch) {
+                advanceToSong(parseInt(firstMatch[1], 10), plId);
+            }
             return;
         }
-        // Fallback if no Up Next queue
-        if (currentSong && currentSong.id) {
-            var plId = currentSong.playlist_id || null;
-            var body = { song_id: currentSong.id };
-            if (plId) body.playlist_id = plId;
-            fetch('/smart_next', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            })
+
+        // Fallback when no Up Next queue is on screen (e.g. browsing Home/Search)
+        if (!currentSong || !currentSong.id) return;
+        var body = { song_id: currentSong.id };
+        if (plId) body.playlist_id = plId;
+        fetch('/smart_next', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'success' && data.song) {
+                playNextTrack(data.song, plId);
+            }
+        })
+        .catch(function(err) { console.log('Next track error:', err); });
+    }
+
+    // Fetch a song (plus its Up Next recommendations) via AJAX and keep playing
+    // in the mini-player. No page navigation happens.
+    function advanceToSong(songId, plId) {
+        var url = '/api/player/' + songId + (plId ? '?playlist_id=' + plId : '');
+        fetch(url)
             .then(function(r) { return r.json(); })
             .then(function(data) {
-                if (data.status === 'success' && data.song) {
-                    var nextUrl = '/player/' + data.song.id;
-                    if (plId) nextUrl += '?playlist_id=' + plId;
-                    navigateTo(nextUrl);
+                if (!data || !data.song) return;
+                playNextTrack(data.song, plId);
+                if (data.recommendations) {
+                    syncPlayerPage(data);
                 }
             })
-            .catch(function(err) { console.log('Next track error:', err); });
+            .catch(function(err) { console.log('Next track fetch error:', err); });
+    }
+
+    // Load the next track into the persistent player and start playback.
+    function playNextTrack(song, plId) {
+        if (!song || !song.id) return;
+        if (plId) song.playlist_id = plId;
+        song.play_requested = true;
+        loadSong(song);
+    }
+
+    // When the /player page is on screen, keep its Now Playing panel, Up Next
+    // queue, like buttons and URL in step with the track that just changed.
+    function syncPlayerPage(data) {
+        if (!/^\/player\/\d+/.test(window.location.pathname)) return;
+        var song = data.song;
+        var titleEl = document.querySelector('.player-track-title');
+        var artistEl = document.querySelector('.player-track-artist');
+        var metaEl = document.querySelector('.player-track-meta');
+        var artWrap = document.querySelector('.player-artwork-container');
+        var recHeading = document.querySelector('.player-recommendations h3');
+
+        if (titleEl) titleEl.textContent = song.title || 'Unknown';
+        if (artistEl) artistEl.textContent = song.artist || '—';
+        if (metaEl && song.genre) {
+            metaEl.textContent = song.genre + ' · ' + Math.round((song.energy || 0) * 100) + '% energy';
         }
+        if (artWrap) {
+            if (song.image_url) {
+                artWrap.innerHTML = '<img class="player-artwork" src="' + song.image_url + '" alt="Album Art">';
+            } else {
+                artWrap.innerHTML = '<img class="player-artwork" src="{{ url_for('static', filename='images/cover.jpg') }}" alt="Album Art">';
+            }
+            var artImg = artWrap.querySelector('img');
+            if (artImg) {
+                artImg.onerror = function() { this.onerror = null; this.src = '{{ url_for('static', filename='images/cover.jpg') }}'; };
+            }
+        }
+        if (recHeading) {
+            recHeading.textContent = 'Up Next: ' + (data.playlist_name || 'Recommended Suggestions');
+        }
+
+        var likeBtn = document.getElementById('player-page-like');
+        var dislikeBtn = document.getElementById('player-page-dislike');
+        if (likeBtn) likeBtn.setAttribute('data-song-id', song.id);
+        if (dislikeBtn) dislikeBtn.setAttribute('data-song-id', song.id);
+        window.dispatchEvent(new CustomEvent('player-page-song-change', { detail: { songId: song.id } }));
+
+        var recList = document.querySelector('.rec-list');
+        if (recList) {
+            recList.innerHTML = '';
+            (data.recommendations || []).forEach(function(rec) {
+                recList.appendChild(buildRecItem(rec, data.playlist_id));
+            });
+        }
+
+        document.title = (song.title || 'Neko') + ' — Neko';
+        var newUrl = '/player/' + song.id + '?autoplay=true' + (data.playlist_id ? '&playlist_id=' + data.playlist_id : '');
+        try { history.replaceState({ url: newUrl }, '', newUrl); } catch (e) {}
+    }
+
+    function buildRecItem(rec, playlistId) {
+        var a = document.createElement('a');
+        a.className = 'rec-item';
+        a.setAttribute('href', '/player/' + rec.id + '?autoplay=true' + (playlistId ? '&playlist_id=' + playlistId : ''));
+        if (rec.image_url) {
+            var img = document.createElement('img');
+            img.className = 'rec-img';
+            img.alt = 'cover';
+            img.src = rec.image_url;
+            img.onerror = function() { this.onerror = null; this.src = '{{ url_for('static', filename='images/cover.jpg') }}'; };
+            a.appendChild(img);
+        } else {
+            var fb = document.createElement('div');
+            fb.className = 'rec-img-fallback';
+            fb.textContent = '♪';
+            a.appendChild(fb);
+        }
+        var info = document.createElement('div');
+        info.className = 'rec-info';
+        var name = document.createElement('span');
+        name.className = 'rec-name';
+        name.textContent = rec.title || '';
+        var artist = document.createElement('span');
+        artist.className = 'rec-artist';
+        artist.textContent = rec.artist || '';
+        info.appendChild(name);
+        info.appendChild(artist);
+        a.appendChild(info);
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'rec-play-icon');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'currentColor');
+        var poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        poly.setAttribute('points', '5 3 19 12 5 21 5 3');
+        svg.appendChild(poly);
+        a.appendChild(svg);
+        return a;
     }
 
     // ===== EXPAND BUTTON (opens the player page) =====
@@ -692,6 +883,69 @@
     window.addEventListener('beforeunload', function() {
         persistPlayerState();
     });
+})();
+</script>
+
+<script>
+(function() {
+    var modal = document.getElementById('logout-modal');
+    if (!modal) return;
+    var cancelBtn = document.getElementById('logout-cancel');
+    var confirmBtn = document.getElementById('logout-confirm');
+
+    function openModal() {
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+    function closeModal() {
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var href = link.getAttribute('href') || '';
+        if (href.indexOf('logout') !== -1) {
+            e.preventDefault();
+            openModal();
+        }
+    });
+
+    cancelBtn.addEventListener('click', closeModal);
+    confirmBtn.addEventListener('click', function() {
+        window.location.href = '/logout';
+    });
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.classList.contains('show')) closeModal();
+    });
+})();
+</script>
+
+<script>
+(function() {
+    var loader = document.getElementById('app-loader');
+    if (!loader) return;
+
+    function show() {
+        loader.classList.remove('hidden');
+    }
+    function hide() {
+        loader.classList.add('hidden');
+    }
+
+    window.__showLoader = show;
+    window.__hideLoader = hide;
+
+    if (document.readyState === 'complete') {
+        hide();
+    } else {
+        window.addEventListener('load', hide);
+        setTimeout(hide, 4000);
+    }
 })();
 </script>
 {% endblock %}

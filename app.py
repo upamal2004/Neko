@@ -2,6 +2,7 @@ import os
 import sqlite3
 import random
 import itertools
+import uuid
 from collections import OrderedDict
 from datetime import datetime, date, timedelta
 import pytz
@@ -14,56 +15,29 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24).hex())
 
+def ensure_avatar_column():
+    try:
+        conn = sqlite3.connect('music.db')
+        conn.execute('ALTER TABLE users ADD COLUMN avatar TEXT')
+        conn.commit()
+        conn.close()
+    except sqlite3.OperationalError:
+        pass
+ensure_avatar_column()
+
 import urllib.parse
-import requests
 @app.template_filter('urlencode')
 def urlencode_filter(s):
     return urllib.parse.quote(s, safe='')
-
-def fetch_and_save_artist_image(artist_name):
-    import time
-    os.makedirs('static/images/artists', exist_ok=True)
-    safe_name = artist_name.lower().replace(' ', '_').replace('/', '_')
-    local_path = f'static/images/artists/{safe_name}.jpg'
-    if os.path.exists(local_path):
-        return f'images/artists/{safe_name}.jpg'
-    try:
-        url = (
-            'http://ws.audioscrobbler.com/2.0/'
-            '?method=artist.getinfo'
-            f'&artist={urllib.parse.quote(artist_name)}'
-            '&api_key=b25b959554ed76058ac220b7b2e0a026'
-            '&format=json'
-        )
-        resp = requests.get(url, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        images = data.get('artist', {}).get('image', [])
-        img_url = ''
-        for img in images:
-            if img.get('size') in ('extralarge', 'mega'):
-                img_url = img.get('#text', '')
-                break
-        if not img_url:
-            for img in images:
-                if img.get('size') == 'large':
-                    img_url = img.get('#text', '')
-                    break
-        if img_url:
-            img_resp = requests.get(img_url, timeout=15)
-            img_resp.raise_for_status()
-            with open(local_path, 'wb') as f:
-                f.write(img_resp.content)
-            return f'images/artists/{safe_name}.jpg'
-    except Exception as e:
-        print(f"  [artist-img] Failed for '{artist_name}': {e}")
-    return None
 
 # Database connection function
 def get_db_connection():
     conn = sqlite3.connect('music.db')
     conn.row_factory = sqlite3.Row # This allows us to use column names directly
     return conn
+
+def default_cover_url():
+    return url_for('static', filename='images/cover.jpg')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -263,6 +237,37 @@ def home():
                            energy_recommended_songs=mark_playlist(energy_recommended_songs),
                            is_filtered=False)
 
+@app.route('/artist')
+def artist_songs():
+    if 'user_id' not in session:
+        return redirect('/login')
+    user_id = session['user_id']
+    name = request.args.get('name', '')
+    needle = name.strip().lower()
+    conn = get_db_connection()
+    if needle:
+        rows = conn.execute(
+            'SELECT * FROM songs WHERE LOWER(artist) = ? ORDER BY title',
+            (needle,)
+        ).fetchall()
+    else:
+        rows = []
+    display_name = rows[0]['artist'] if rows else name.strip()
+    playlist_song_ids = set()
+    default_playlist = conn.execute(
+        'SELECT id FROM playlists_new WHERE user_id = ? ORDER BY created_at LIMIT 1',
+        (user_id,)
+    ).fetchone()
+    if default_playlist:
+        playlist_song_ids = {r['song_id'] for r in conn.execute(
+            'SELECT song_id FROM playlist_songs WHERE playlist_id = ?',
+            (default_playlist['id'],)
+        ).fetchall()}
+    conn.close()
+    artist_songs = [{**dict(s), 'is_in_playlist': s['id'] in playlist_song_ids} for s in rows]
+    return render_template('index.html', artist_filter=display_name,
+                           artist_songs=artist_songs, is_filtered=False)
+
 @app.route('/recommend', methods=['GET'])
 def recommend():
     genre = request.args.get('genre', 'all')
@@ -378,6 +383,8 @@ def search_suggestions():
         image_url = ''
         if s['genre'] in ('Pop', 'Rock', 'Classical'):
             image_url = url_for('static', filename='images/' + s['genre'] + ' ' + mood + '.jpg')
+        if not image_url:
+            image_url = default_cover_url()
         results.append({
             'id': s['id'],
             'title': s['title'],
@@ -413,6 +420,26 @@ def search_song():
     return render_template('index.html', songs=songs,
                            page=page, per_page=per_page, total=total, total_pages=total_pages)
 
+def build_pagination_pages(page, total_pages, around=2):
+    """Return the page numbers to show in a smart pagination bar.
+
+    Always includes page 1, the last page, and the pages within ``around``
+    steps of the active page. Gaps are collapsed into ellipsis markers (None).
+    """
+    shown = []
+    for p in range(1, total_pages + 1):
+        if p == 1 or p == total_pages or abs(p - page) <= around:
+            shown.append(p)
+    result = []
+    prev = 0
+    for p in shown:
+        if p - prev > 1:
+            result.append(None)
+        result.append(p)
+        prev = p
+    return result
+
+
 @app.route('/history')
 def view_history():
     if 'user_id' not in session:
@@ -438,7 +465,8 @@ def view_history():
     ''', (session['user_id'], per_page, offset)).fetchall()
     conn.close()
     
-    return render_template('history.html', history=history, page=page, total_pages=total_pages)
+    pages = build_pagination_pages(page, total_pages)
+    return render_template('history.html', history=history, page=page, total_pages=total_pages, pages=pages)
 
 @app.route('/delete_history/<int:history_id>', methods=['POST'])
 def delete_history(history_id):
@@ -1001,7 +1029,7 @@ def settings_page():
         return redirect('/login')
     
     conn = get_db_connection()
-    user = conn.execute('SELECT id, username FROM users WHERE id = ?',
+    user = conn.execute('SELECT id, username, avatar FROM users WHERE id = ?',
                         (session['user_id'],)).fetchone()
     
     if request.method == 'POST':
@@ -1022,7 +1050,7 @@ def settings_page():
             conn.commit()
             session['username'] = new_username
             conn.close()
-            return render_template('settings.html', user={'id': session['user_id'], 'username': new_username}, success='Username updated.')
+            return render_template('settings.html', user={'id': session['user_id'], 'username': new_username, 'avatar': user['avatar'] if user else ''}, success='Username updated.')
         
         elif action == 'change_password':
             current_pw = request.form.get('current_password', '')
@@ -1076,6 +1104,45 @@ def clear_history():
     
     return redirect('/history') # Redirect back to the history page after clearing
 
+ALLOWED_AVATAR_EXT = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+@app.route('/settings/upload_avatar', methods=['POST'])
+def upload_avatar():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    f = request.files.get('avatar')
+    if not f or not f.filename:
+        return redirect('/settings')
+
+    ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+    if ext not in ALLOWED_AVATAR_EXT:
+        return redirect('/settings')
+
+    folder = os.path.join('static', 'uploads', 'avatars')
+    os.makedirs(folder, exist_ok=True)
+    fname = "u{}_{}.{}".format(session['user_id'], uuid.uuid4().hex[:12], ext)
+    f.save(os.path.join(folder, fname))
+
+    conn = get_db_connection()
+    conn.execute('UPDATE users SET avatar = ? WHERE id = ?', (fname, session['user_id']))
+    conn.commit()
+    conn.close()
+    return redirect('/settings')
+
+@app.context_processor
+def inject_user_avatar():
+    if 'user_id' in session:
+        try:
+            conn = get_db_connection()
+            row = conn.execute('SELECT avatar FROM users WHERE id = ?',
+                               (session['user_id'],)).fetchone()
+            conn.close()
+            return {'user_avatar': row['avatar'] if row and row['avatar'] else ''}
+        except Exception:
+            return {'user_avatar': ''}
+    return {'user_avatar': ''}
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -1092,6 +1159,8 @@ def build_player_context(song_id, playlist_id=None):
     song = dict(song)
     if not song.get('file_path') or song['file_path'].strip() == '':
         song['file_path'] = 'default.mp3'
+    if not song.get('image_url'):
+        song['image_url'] = default_cover_url()
 
     recommendations = []
     playlist_name = "Recommended Suggestions"
@@ -1144,7 +1213,7 @@ def serialize_song(song):
         'genre': song['genre'],
         'energy': song['energy'],
         'file_path': url_for('static', filename='songs/' + song['file_path']) if song.get('file_path') else '',
-        'image_url': song.get('image_url') or ''
+        'image_url': song.get('image_url') or default_cover_url()
     }
 
 
@@ -1206,6 +1275,8 @@ def api_song(song_id):
     if not image_url and song['genre'] in ('Pop', 'Rock', 'Classical'):
         mood = 'happy' if song['energy'] >= 0.5 else 'relax'
         image_url = url_for('static', filename='images/' + song['genre'] + ' ' + mood + '.jpg')
+    if not image_url:
+        image_url = default_cover_url()
     return jsonify({
         'id': song['id'],
         'title': song['title'],

@@ -13,11 +13,7 @@
     <div class="player-main">
         <div class="player-main-inner">
             <div class="player-artwork-container">
-                {% if song.get('image_url') %}
-                    <img class="player-artwork" src="{{ song['image_url'] }}" alt="Album Art" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/cover.jpg') }}';">
-                {% else %}
-                    <div class="player-artwork player-artwork-fallback">♪</div>
-                {% endif %}
+                <img class="player-artwork" src="{{ song['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="{{ song['title'] }}" onerror="this.onerror=null; this.src='/static/images/cover.jpg';">
             </div>
             <div class="player-details">
                 <h1 class="player-track-title">{{ song['title'] }}</h1>
@@ -55,6 +51,8 @@
                             <button class="picker-create-btn" id="create-new-playlist-btn">Create</button>
                         </div>
                     </div>
+
+                    <div class="playlist-picker-backdrop" id="playlist-picker-backdrop"></div>
                 </div>
             </div>
         </div>
@@ -66,11 +64,7 @@
             <div class="rec-list">
                 {% for rec in recommendations %}
                 <a href="/player/{{ rec['id'] }}?autoplay=true{% if playlist_id %}&playlist_id={{ playlist_id }}{% endif %}" class="rec-item">
-                    {% if rec['image_url'] %}
-                        <img class="rec-img" src="{{ rec['image_url'] }}" alt="cover" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/cover.jpg') }}';">
-                    {% else %}
-                        <div class="rec-img-fallback">♪</div>
-                    {% endif %}
+                    <img class="rec-img" src="{{ rec['image_url'] or url_for('static', filename='images/cover.jpg') }}" alt="cover" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/cover.jpg') }}';">
                     <div class="rec-info">
                         <span class="rec-name">{{ rec['title'] }}</span>
                         <span class="rec-artist">{{ rec['artist'] }}</span>
@@ -124,8 +118,11 @@
         if (state.is_playing) {
             wantPlay = true;
             wantResume = state.current_time;
-        } else if (state.current_time > 0) {
-            wantResume = state.current_time;
+        } else {
+            wantPlay = false;
+            if (state.current_time > 0) {
+                wantResume = state.current_time;
+            }
         }
     }
     songData.play_requested = wantPlay;
@@ -146,6 +143,17 @@
     var createBtn = document.getElementById('create-new-playlist-btn');
 
     var ADD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
+    var backdrop = document.getElementById('playlist-picker-backdrop');
+
+    function closePicker() {
+        picker.classList.remove('open');
+        addBtn.innerHTML = ADD_ICON + ' Add to Playlist';
+        addBtn.style.borderColor = '';
+        addBtn.style.color = '';
+        createRow.classList.remove('open');
+        createInput.value = '';
+    }
 
     function populateSelect(selectedVal) {
         fetch('/get_playlists')
@@ -173,15 +181,25 @@
 
     addBtn.addEventListener('click', function() {
         var isOpen = picker.classList.contains('open');
-        picker.classList.toggle('open');
         if (isOpen) {
-            addBtn.innerHTML = ADD_ICON + ' Add to Playlist';
+            closePicker();
         } else {
             populateSelect();
+            picker.classList.add('open');
             addBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel';
+            createRow.classList.remove('open');
+            createInput.value = '';
         }
-        createRow.classList.remove('open');
-        createInput.value = '';
+    });
+
+    if (backdrop) {
+        backdrop.addEventListener('click', closePicker);
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && picker.classList.contains('open')) {
+            closePicker();
+        }
     });
 
     select.addEventListener('change', function() {
@@ -259,6 +277,14 @@
     var dislikeBtn = document.getElementById('player-page-dislike');
     if (!likeBtn || !dislikeBtn) return;
     var songId = likeBtn.getAttribute('data-song-id');
+
+    // When the track auto-advances in the mini-player the page is NOT navigated,
+    // so the song this like bar refers to must be updated in place.
+    window.addEventListener('player-page-song-change', function(e) {
+        if (e.detail && e.detail.songId) {
+            songId = String(e.detail.songId);
+        }
+    });
 
     window.addEventListener('like:sync', function(e) {
         var liked = e.detail.liked;

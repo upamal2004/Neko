@@ -3220,6 +3220,11 @@ footer, .player-bar, .main-content, .sidebar, main {
     overflow: hidden;
 }
 
+/* Desktop: the track-nav duplicates inside .player-right are mobile-only. */
+.player-right .player-track-btn {
+    display: none;
+}
+
 .volume-slider {
     width: 80px;
     height: 4px;
@@ -3979,39 +3984,134 @@ footer, .player-bar, .main-content, .sidebar, main {
    controls on exactly the same horizontal center. Restricted to small screens
    so desktop layout (3-column grid) is untouched. */
 @media (max-width: 768px) {
-    /* Mobile mini-player: hide the left thumbnail + song info so the playback
-       controls and timeline get the full bar width. Desktop is untouched. */
+    /* Two-row mobile mini-player:
+         row 1 = [ compact title ..... prev next like dislike volume expand ]
+         row 2 = [ play (bottom-left)  |  timeline spanning the bottom      ]
+       Desktop view is completely untouched. */
+    .persistent-player {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-rows: auto auto;
+        grid-template-areas:
+            "left right"
+            "center center";
+        gap: 4px 8px !important;
+        padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+    }
+
+    /* Row 1 — left: single-line track title (thumbnail/artist hidden). */
     .persistent-player .player-left {
+        grid-area: left;
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        pointer-events: none !important;
+    }
+    .persistent-player .player-thumb,
+    .persistent-player .player-artist,
+    .persistent-player .player-visualizer {
         display: none !important;
     }
+    .persistent-player .player-text-info {
+        display: block !important;
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .persistent-player .player-song-title {
+        display: block !important;
+        font-size: 0.75rem !important;
+        font-weight: 600 !important;
+        line-height: 1.1 !important;
+        color: var(--text-muted) !important;
+        text-align: left !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+    }
 
+    /* Row 1 — right: like/dislike/volume/expand grouped on one line. */
+    .persistent-player .player-right {
+        grid-area: right;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        flex-wrap: nowrap !important;
+        gap: 4px !important;
+        min-width: 0 !important;
+    }
+
+    /* Row 2 — play/pause bottom-left + timeline filling the width. */
     .persistent-player .player-center {
+        grid-area: center;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 12px !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
+    .persistent-player .player-controls-buttons {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        flex-shrink: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    /* Previous/Next move into the top-right group on mobile (kept visible and
+       fully operational); only Play/Pause remains anchored at the bottom-left. */
+    .persistent-player .player-controls-buttons #player-prev,
+    .persistent-player .player-controls-buttons #player-next {
+        display: none !important;
+    }
+    .persistent-player .player-right .player-track-btn {
+        display: inline-flex !important;
+        flex-shrink: 0 !important;
+    }
+    .persistent-player .player-right .player-btn {
+        width: 26px !important;
+        height: 26px !important;
+    }
+    .persistent-player .volume-slider {
+        width: 40px !important;
+    }
+    .persistent-player #player-play {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .persistent-player .playback-bar {
         flex: 1 1 auto !important;
         min-width: 0 !important;
-        align-items: center !important;
-    }
-
-    .persistent-player .player-controls-buttons,
-    .persistent-player .playback-bar {
-        width: 100% !important;
         max-width: 100% !important;
-        margin: 0 auto !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 0 4px 0 !important;
+        align-self: flex-end !important;
     }
-
-    .persistent-player .player-controls-buttons {
-        justify-content: center !important;
-    }
-
     .persistent-player .track-slider {
         flex: 1 1 0 !important;
         min-width: 0 !important;
         max-width: 100% !important;
     }
+}
 
-    /* Clean right-side cluster: like/dislike/volume/expand stay flush right. */
-    .persistent-player .player-right {
-        flex: 0 0 auto !important;
-        justify-content: flex-end !important;
+/* Bottom clearance for the slightly taller mobile bar that now carries the
+   compact title banner above the controls. */
+@media (max-width: 768px) {
+    body:has(footer.persistent-player:not(.idle)) .layout-main,
+    body:has(footer.persistent-player:not(.idle)) .player-page {
+        padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)) !important;
     }
 }
 

@@ -134,6 +134,12 @@
         </div>
 
         <div class="player-right">
+            <button class="player-btn player-track-btn" id="player-prev-right" title="Previous">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="player-btn player-track-btn" id="player-next-right" title="Next">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
             <button class="player-btn" id="player-like-btn" title="Like">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="like-icon"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
             </button>
@@ -473,6 +479,20 @@
     });
 
     prevBtn.addEventListener('click', function() {
+        if (audio.currentTime > 3) {
+            audio.currentTime = 0;
+        }
+    });
+
+    // Mobile top-right track-nav duplicates: same handlers as the desktop set.
+    var prevRightBtn = document.getElementById('player-prev-right');
+    var nextRightBtn = document.getElementById('player-next-right');
+
+    nextRightBtn.addEventListener('click', function() {
+        goToNextTrack(true);
+    });
+
+    prevRightBtn.addEventListener('click', function() {
         if (audio.currentTime > 3) {
             audio.currentTime = 0;
         }
